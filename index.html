@@ -40,7 +40,7 @@
   <div class="profile">
 <a href="https://ibb.co/mCH7rjQW"><img src="https://i.ibb.co/6R45cM6C/Polish-20250529-015530961.jpg" alt="Polish-20250529-015530961" border="0"></a>    <div class="balance">Balance:</div>
     <div class="usd" id="usd-balance">USD $20.00</div>
-    <div class="balance">Referrals: <span id="ref-count">0</span></div>
+    <div class="balance">Referrals: <span id="ref-count">10</span></div>
   </div>
 
   <div class="card" id="home-card">
@@ -59,7 +59,7 @@
 
   <div class="card" id="withdraw" style="display:none;">
     <h3 style="color: #007bff;">Withdraw</h3>
-    <p>Available Balance: <b>USD $<span id="available">0.00</span></b></p>
+    <p>Available Balance: <b>USD $<span id="available">20.00</span></b></p>
     <p>Withdrawal Method</p>
     <select>
       <option>Select a method</option>
@@ -134,7 +134,7 @@
         referredUsers.push(userId);
         localStorage.setItem(`referrals_${refId}`, JSON.stringify(referredUsers));
         if (userId !== refId) {
-          const refCount = parseInt(localStorage.getItem(`ref_count_${refId}`) || "0");
+          const refCount = parseInt(localStorage.getItem(`ref_count_${refId}`) || "10");
           localStorage.setItem(`ref_count_${refId}`, refCount + 1);
         }
       }
