@@ -509,78 +509,6 @@
       font-size: 14px;
       opacity: 0.7;
     }
-
-    /* Admin Section */
-    .admin-section {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 20px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    }
-
-    .admin-section-title {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 15px;
-    }
-
-    .admin-section-title i {
-      font-size: 24px;
-      margin-right: 10px;
-      color: #fdbb2d;
-    }
-
-    .admin-section-title h3 {
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .admin-info-item {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .admin-info-label {
-      font-size: 14px;
-      opacity: 0.8;
-    }
-
-    .admin-info-value {
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .withdrawal-history-item {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 10px;
-    }
-
-    .withdrawal-history-header {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      padding: 10px 15px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 12px;
-      margin-bottom: 10px;
-    }
-
-    .withdrawal-history-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      padding: 10px 15px;
-      align-items: center;
-    }
   </style>
 </head>
 <body>
@@ -844,7 +772,7 @@
         </div>
         <div class="info-row">
           <span class="info-label">Completion Bonus (100 tasks)</span>
-          <span class="info-value">$.10</span>
+          <span class="info-value">$1.00</span>
         </div>
         <button class="btn btn-secondary" onclick="claimDailyBonus()">
           <i class="fas fa-gift"></i> Claim Daily Bonus
@@ -967,50 +895,6 @@
     </div>
   </div>
 
-  <!-- Admin Section (Hidden for regular users) -->
-  <div class="cards-container" id="admin-section" style="display:none;">
-    <div class="admin-section">
-      <div class="admin-section-title">
-        <i class="fas fa-user-shield"></i>
-        <h3>Admin Panel</h3>
-      </div>
-      <div class="admin-info-item">
-        <span class="admin-info-label">Total Users</span>
-        <span class="admin-info-value" id="total-users">0</span>
-      </div>
-      <div class="admin-info-item">
-        <span class="admin-info-label">Total Withdrawals</span>
-        <span class="admin-info-value" id="total-withdrawals">0</span>
-      </div>
-      <div class="admin-info-item">
-        <span class="admin-info-label">Pending Withdrawals</span>
-        <span class="admin-info-value" id="pending-withdrawals">0</span>
-      </div>
-      <div class="admin-info-item">
-        <span class="admin-info-label">Total Platform Earnings</span>
-        <span class="admin-info-value">$<span id="platform-earnings">0.000</span></span>
-      </div>
-    </div>
-
-    <div class="admin-section">
-      <div class="admin-section-title">
-        <i class="fas fa-money-bill-wave"></i>
-        <h3>Recent Withdrawals</h3>
-      </div>
-      <div class="withdrawal-history">
-        <div class="withdrawal-history-header">
-          <div>User ID</div>
-          <div>Amount</div>
-          <div>Method</div>
-          <div>Date</div>
-        </div>
-        <div id="admin-withdrawal-list">
-          <!-- Withdrawal items will be generated here -->
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="nav">
     <div class="nav-item active" id="nav-home" onclick="show('home')">
       <div class="nav-icon">
@@ -1036,21 +920,15 @@
       </div>
       <div class="nav-label">Profile</div>
     </div>
-    <div class="nav-item" id="nav-admin" onclick="show('admin')" style="display:none;">
-      <div class="nav-icon">
-        <i class="fas fa-user-shield"></i>
-      </div>
-      <div class="nav-label">Admin</div>
-    </div>
   </div>
 
   <script>
     // Telegram Bot API Configuration
     const BOT_TOKEN = "7510746591:AAG0CNKH-y6yHekbQRXTmgkuTmH7p0VdALo";
     const API_BASE = `https://api.telegram.org/bot${BOT_TOKEN}`;
-
-    // Admin User ID - REPLACE WITH YOUR ACTUAL TELEGRAM USER ID
-    const ADMIN_USER_ID = 6892959740; // Change this to your Telegram user ID
+    
+    // 🔥 ADMIN USER ID - REPLACE WITH YOUR ACTUAL TELEGRAM USER ID 🔥
+    const ADMIN_USER_ID = 6892959740; // Change this to your actual Telegram user ID
 
     // Global variables
     let telegramUser = null;
@@ -1144,11 +1022,6 @@
       localStorage.setItem(`MTEarningData_${userId}`, JSON.stringify(userData));
       localStorage.setItem(`dailyEarningData_${userId}`, JSON.stringify(data));
       
-      // Check if user is admin
-      if (userId == ADMIN_USER_ID) {
-        document.getElementById("nav-admin").style.display = "flex";
-      }
-      
       // Hide loading and show content
       document.getElementById('loading').style.display = 'none';
       document.getElementById('home-profile').style.display = 'block';
@@ -1167,31 +1040,15 @@
         if (startParam && startParam.startsWith('ref_')) {
           const referrerId = parseInt(startParam.substring(4));
           
+          console.log(`User ${userId} was referred by ${referrerId}`);
+          
           // Store who referred this user
           userData.referredBy = referrerId;
           localStorage.setItem(`MTEarningData_${userId}`, JSON.stringify(userData));
           
-          // Send referral data to bot
-          try {
-            const response = await fetch(`${API_BASE}/sendMessage`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                chat_id: referrerId,
-                text: `🎉 Congratulations! You have a new referral: ${telegramUser.first_name} (@${telegramUser.username || 'no_username'})`
-              })
-            });
-            
-            if (response.ok) {
-              // Update referrer's data
-              await updateReferrerData(referrerId, userId);
-              showNotification("🎉 Welcome! You joined via referral link.", "success");
-            }
-          } catch (error) {
-            console.error("Error sending referral notification:", error);
-          }
+          // Update referrer's data
+          await updateReferrerData(referrerId, userId);
+          showNotification("🎉 Welcome! You joined via referral link.", "success");
         }
       }
     }
@@ -1219,25 +1076,35 @@
             referrerData.referralHistory = [];
           }
           
-          referrerData.referralHistory.push(newReferral);
-          referrerData.pendingReferrals += 1;
-          
-          // Save updated referrer data
-          localStorage.setItem(referrerDataKey, JSON.stringify(referrerData));
-          
-          // Send notification to referrer
-          await fetch(`${API_BASE}/sendMessage`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              chat_id: referrerId,
-              text: `🎉 New referral added! User ID: ${referredUserId}. They need to earn $30 to activate your bonus.`
-            })
-          });
-          
-          console.log(`Referral added: ${referredUserId} referred by ${referrerId}`);
+          // Check if referral already exists to avoid duplicates
+          const existingReferral = referrerData.referralHistory.find(ref => ref.id === referredUserId);
+          if (!existingReferral) {
+            referrerData.referralHistory.push(newReferral);
+            referrerData.pendingReferrals = (referrerData.pendingReferrals || 0) + 1;
+            
+            // Save updated referrer data
+            localStorage.setItem(referrerDataKey, JSON.stringify(referrerData));
+            
+            console.log(`Referral added: ${referredUserId} referred by ${referrerId}`);
+            
+            // Send notification to referrer via Telegram bot
+            try {
+              await fetch(`${API_BASE}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  chat_id: referrerId,
+                  text: `🎉 New referral added! User ID: ${referredUserId}. They need to earn $30 to activate your bonus.`
+                })
+              });
+            } catch (error) {
+              console.error("Error sending Telegram notification:", error);
+            }
+          } else {
+            console.log(`Referral already exists: ${referredUserId}`);
+          }
         } else {
           console.log(`Referrer data not found for ID: ${referrerId}`);
         }
@@ -1246,26 +1113,10 @@
       }
     }
 
-    // Send withdrawal notification to admin
-    async function sendWithdrawalNotification(userId, amount, method, address) {
-      try {
-        await fetch(`${API_BASE}/sendMessage`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            chat_id: ADMIN_USER_ID,
-            text: `💰 WITHDRAWAL REQUEST\n\nUser ID: ${userId}\nAmount: $${amount}\nMethod: ${method}\nAddress: ${address}\n\nPlease process this withdrawal within 24-48 hours.`
-          })
-        });
-      } catch (error) {
-        console.error("Error sending withdrawal notification:", error);
-      }
-    }
-
     // Update referral progress when referred user earns
     function updateReferralProgress(referredUserId, amountEarned) {
+      console.log(`Updating referral progress for ${referredUserId}: $${amountEarned}`);
+      
       // Find all users who have this user as a referral
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -1275,10 +1126,12 @@
             const userData = JSON.parse(userDataStr);
             
             // Check if this user has the referred user in their history
-            if (userData.referralHistory) {
+            if (userData.referralHistory && userData.referralHistory.length > 0) {
               const referralIndex = userData.referralHistory.findIndex(ref => ref.id == referredUserId);
               
               if (referralIndex !== -1) {
+                console.log(`Found referral in user ${userData.userId}'s history`);
+                
                 // Update the referral progress
                 userData.referralHistory[referralIndex].earned += amountEarned;
                 userData.referralHistory[referralIndex].progress = Math.min(100, (userData.referralHistory[referralIndex].earned / 30) * 100);
@@ -1286,10 +1139,12 @@
                 // Check if referral is now active
                 if (userData.referralHistory[referralIndex].earned >= 30 && userData.referralHistory[referralIndex].status === 'pending') {
                   userData.referralHistory[referralIndex].status = 'active';
-                  userData.pendingReferrals -= 1;
-                  userData.referrals += 1;
-                  userData.referralEarnings += 1.00;
-                  userData.lifetimeEarning += 1.00;
+                  userData.pendingReferrals = Math.max(0, (userData.pendingReferrals || 0) - 1);
+                  userData.referrals = (userData.referrals || 0) + 1;
+                  userData.referralEarnings = (userData.referralEarnings || 0) + 1.00;
+                  userData.lifetimeEarning = (userData.lifetimeEarning || 0) + 1.00;
+                  
+                  console.log(`Referral ${referredUserId} is now active!`);
                   
                   // Send notification
                   sendReferralActivationNotification(userData.userId, referredUserId);
@@ -1300,6 +1155,7 @@
                 
                 // Update display if this is the current user
                 if (userData.userId === (telegramUser ? telegramUser.id : 220376)) {
+                  console.log("Updating display for referrer");
                   updateDisplay();
                 }
               }
@@ -1324,6 +1180,50 @@
         });
       } catch (error) {
         console.error("Error sending activation notification:", error);
+      }
+    }
+
+    // 🔥 NEW FUNCTION: Send withdrawal notification to admin 🔥
+    async function sendWithdrawalNotificationToAdmin(withdrawalData) {
+      try {
+        const message = `
+🔄 **NEW WITHDRAWAL REQUEST** 🔄
+
+👤 **User Information:**
+- Name: ${withdrawalData.userName}
+- ID: ${withdrawalData.userId}
+- Username: @${withdrawalData.userUsername}
+
+💰 **Withdrawal Details:**
+- Amount: $${withdrawalData.amount}
+- Method: ${withdrawalData.method}
+- Address: ${withdrawalData.address}
+
+📊 **User Stats:**
+- Balance: $${withdrawalData.userBalance}
+- Total Earned: $${withdrawalData.totalEarned}
+- Total Withdrawn: $${withdrawalData.totalWithdrawn}
+- Referrals: ${withdrawalData.referrals}
+- Tasks Completed: ${withdrawalData.tasksCompleted}
+
+⏰ **Time:** ${new Date().toLocaleString()}
+        `;
+        
+        await fetch(`${API_BASE}/sendMessage`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chat_id: ADMIN_USER_ID,
+            text: message,
+            parse_mode: 'Markdown'
+          })
+        });
+        
+        console.log("Withdrawal notification sent to admin");
+      } catch (error) {
+        console.error("Error sending withdrawal notification to admin:", error);
       }
     }
 
@@ -1353,7 +1253,7 @@
       document.getElementById("total-earned").innerText = "$" + (userData.lifetimeEarning - userData.withdrew).toFixed(3);
       document.getElementById("tasks-completed").innerText = userData.totalTasks;
       document.getElementById("lifetime-earning").innerText = "$" + userData.lifetimeEarning.toFixed(3);
-      document.getElementById("referral-earnings").innerText = "$" + userData.referralEarnings.toFixed(3);
+      document.getElementById("referral-earnings").innerText = "$" + (userData.referralEarnings || 0).toFixed(3);
       
       // Update progress bar
       const progressPercent = (data.completed / 100 * 100);
@@ -1366,19 +1266,19 @@
       document.getElementById("profile-tasks-completed").innerText = userData.totalTasks;
       
       // Update referral section
-      document.getElementById("ref-earned").innerText = userData.referralEarnings.toFixed(3);
-      document.getElementById("referral-count").innerText = userData.referrals;
+      document.getElementById("ref-earned").innerText = (userData.referralEarnings || 0).toFixed(3);
+      document.getElementById("referral-count").innerText = userData.referrals || 0;
       document.getElementById("ref-link").innerText = `https://t.me/TaskTycoon_bot?start=ref_${userData.userId}`;
       
       // Update profile page
       document.getElementById("profile-username").innerText = userData.firstName || userData.username;
       document.getElementById("profile-user-id").innerText = userData.userId;
-      document.getElementById("profile-refer-count").innerText = userData.referrals;
-      document.getElementById("profile-refer-earnings").innerText = userData.referralEarnings.toFixed(3);
+      document.getElementById("profile-refer-count").innerText = userData.referrals || 0;
+      document.getElementById("profile-refer-earnings").innerText = (userData.referralEarnings || 0).toFixed(3);
       document.getElementById("profile-today-earning").innerText = data.todaysEarning.toFixed(3);
       document.getElementById("profile-lifetime-earning").innerText = userData.lifetimeEarning.toFixed(3);
       document.getElementById("join-date").innerText = userData.joinDate;
-      document.getElementById("profile-pending-refs").innerText = userData.pendingReferrals;
+      document.getElementById("profile-pending-refs").innerText = userData.pendingReferrals || 0;
       document.getElementById("profile-ref-link").innerText = `https://t.me/TaskTycoon_bot?start=ref_${userData.userId}`;
       document.getElementById("profile-tasks-today").innerText = `${data.completed}/100`;
       
@@ -1391,87 +1291,8 @@
       // Update referral history
       updateReferralHistoryDisplay();
       
-      // Update admin panel if user is admin
-      if (userData.userId == ADMIN_USER_ID) {
-        updateAdminPanel();
-      }
-      
       // Update task visualization
       updateTaskVisualization();
-    }
-
-    // Update admin panel
-    function updateAdminPanel() {
-      // Count total users
-      let totalUsers = 0;
-      let totalWithdrawals = 0;
-      let pendingWithdrawals = 0;
-      let platformEarnings = 0;
-      let withdrawalHistory = [];
-      
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('MTEarningData_')) {
-          const userDataStr = localStorage.getItem(key);
-          if (userDataStr) {
-            const userData = JSON.parse(userDataStr);
-            totalUsers++;
-            platformEarnings += userData.lifetimeEarning;
-            
-            // Check if user has withdrawal history
-            if (userData.withdrawalHistory) {
-              totalWithdrawals += userData.withdrawalHistory.length;
-              userData.withdrawalHistory.forEach(withdrawal => {
-                if (withdrawal.status === 'pending') {
-                  pendingWithdrawals++;
-                }
-                withdrawalHistory.push({
-                  userId: userData.userId,
-                  amount: withdrawal.amount,
-                  method: withdrawal.method,
-                  date: withdrawal.date,
-                  status: withdrawal.status
-                });
-              });
-            }
-          }
-        }
-      }
-      
-      // Sort withdrawal history by date (newest first)
-      withdrawalHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-      
-      // Update admin panel
-      document.getElementById("total-users").innerText = totalUsers;
-      document.getElementById("total-withdrawals").innerText = totalWithdrawals;
-      document.getElementById("pending-withdrawals").innerText = pendingWithdrawals;
-      document.getElementById("platform-earnings").innerText = platformEarnings.toFixed(3);
-      
-      // Update withdrawal list
-      const withdrawalList = document.getElementById("admin-withdrawal-list");
-      withdrawalList.innerHTML = '';
-      
-      if (withdrawalHistory.length === 0) {
-        withdrawalList.innerHTML = '<div class="empty-history">No withdrawal history</div>';
-        return;
-      }
-      
-      // Show only the 10 most recent withdrawals
-      const recentWithdrawals = withdrawalHistory.slice(0, 10);
-      
-      recentWithdrawals.forEach(withdrawal => {
-        const withdrawalRow = document.createElement("div");
-        withdrawalRow.className = "withdrawal-history-row";
-        
-        withdrawalRow.innerHTML = `
-          <div>${withdrawal.userId}</div>
-          <div>$${withdrawal.amount.toFixed(3)}</div>
-          <div>${withdrawal.method}</div>
-          <div>${withdrawal.date}</div>
-        `;
-        
-        withdrawalList.appendChild(withdrawalRow);
-      });
     }
 
     // Update referral history display
@@ -1633,7 +1454,7 @@
         showNotification("Please enter a valid amount", "error");
         return;
       }
-      if (amount < .030) {
+      if (amount < 0.030) {
         showNotification("Minimum withdrawal amount is $30", "error");
         return;
       }
@@ -1641,7 +1462,7 @@
         showNotification("Insufficient balance", "error");
         return;
       }
-      if (userData.referrals < 0) {
+      if ((userData.referrals || 0) < 0) {
         showNotification("You need at least 10 referrals to withdraw", "error");
         return;
       }
@@ -1656,26 +1477,26 @@
       
       // Update balance
       userData.withdrew += amount;
-      
-      // Store withdrawal history
-      if (!userData.withdrawalHistory) {
-        userData.withdrawalHistory = [];
-      }
-      
-      userData.withdrawalHistory.push({
-        amount: amount,
-        method: method,
-        address: address,
-        date: new Date().toLocaleDateString(),
-        status: 'pending'
-      });
-      
       updateStorage();
       updateDisplay();
       showNotification("Withdrawal request submitted successfully! It will be processed within 24-48 hours.", "success");
       
-      // Send notification to admin
-      sendWithdrawalNotification(userData.userId, amount, method, address);
+      // 🔥 Send notification to admin about the withdrawal request 🔥
+      const withdrawalData = {
+        userId: userData.userId,
+        userName: userData.firstName || userData.username,
+        userUsername: userData.username || "No username",
+        amount: amount.toFixed(3),
+        method: method,
+        address: address,
+        userBalance: (userData.lifetimeEarning - userData.withdrew).toFixed(3),
+        totalEarned: userData.lifetimeEarning.toFixed(3),
+        totalWithdrawn: userData.withdrew.toFixed(3),
+        referrals: userData.referrals || 0,
+        tasksCompleted: userData.totalTasks
+      };
+      
+      sendWithdrawalNotificationToAdmin(withdrawalData);
       
       // Reset form
       document.getElementById("withdraw-amount").value = "";
@@ -1690,7 +1511,6 @@
       document.getElementById("withdraw").style.display = "none";
       document.getElementById("earn").style.display = "none";
       document.getElementById("profile-page").style.display = "none";
-      document.getElementById("admin-section").style.display = "none";
       
       // Show appropriate section
       if (section === 'home') {
@@ -1702,9 +1522,6 @@
         document.getElementById("earn").style.display = "block";
       } else if (section === 'profile') {
         document.getElementById("profile-page").style.display = "block";
-      } else if (section === 'admin') {
-        document.getElementById("admin-section").style.display = "block";
-        updateAdminPanel();
       }
       
       // Update navigation
