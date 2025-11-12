@@ -924,7 +924,7 @@
 
   <script>
     // Telegram Bot API Configuration
-    const BOT_TOKEN = "7510746591:AAG0CNKH-y6yHekbQRXTmgkuTmH7p0VdALo";
+    const BOT_TOKEN = "7510748392:AAHeWT2CwAYoqC_R8O2DYcJ_zhxEutMVcbw";
     const API_BASE = `https://api.telegram.org/bot${BOT_TOKEN}`;
     
     // 🔥 ADMIN USER ID - REPLACE WITH YOUR ACTUAL TELEGRAM USER ID 🔥
@@ -1534,7 +1534,7 @@
     function copyReferralLink() {
       if (!userData) return;
       
-      const refLink = `https://t.me/makemoneyonlin_bot?start=ref_${userData.userId}`;
+      const refLink = `https://t.me/incomeonlinemt_bot?start=ref_${userData.userId}`;
       navigator.clipboard.writeText(refLink)
         .then(() => showNotification("✅ Referral link copied! You earn $1 for each successful referral.", "success"))
         .catch(() => showNotification("Failed to copy link", "error"));
@@ -1543,7 +1543,7 @@
     function shareReferralLink() {
       if (!userData) return;
       
-      const refLink = `https://t.me/makemoneyonlin_bot?start=ref_${userData.userId}`;
+      const refLink = `https://t.me/incomeonlinemt_bot?start=ref_${userData.userId}`;
       
       // Check if we're in a Telegram environment
       if (window.Telegram && window.Telegram.WebApp) {
