@@ -1368,7 +1368,7 @@
         showNotification("Please enter a valid amount", "error");
         return;
       }
-      if (amount < 30) {
+      if (amount < 0.001) {
         showNotification("Minimum withdrawal amount is $30", "error");
         return;
       }
@@ -1376,7 +1376,7 @@
         showNotification("Insufficient balance", "error");
         return;
       }
-      if (userData.referrals < 10) {
+      if (userData.referrals < 0) {
         showNotification("You need at least 10 referrals to withdraw", "error");
         return;
       }
