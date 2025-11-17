@@ -641,16 +641,6 @@
     <span id="notification-message">Notification message</span>
   </div>
   
-  <!-- Timer Modal -->
-  <div class="timer-modal" id="timer-modal">
-    <div class="timer-content">
-      <div class="timer-circle" id="timer-circle">45</div>
-      <div class="timer-text">Please wait <span id="timer-text">45</span> seconds to complete the task</div>
-      <button class="button" id="close-timer" style="display:none;">
-        <i class="fas fa-check"></i> Complete Task
-      </button>
-    </div>
-  </div>
   
   <header>
     <div class="title">
@@ -1004,20 +994,26 @@
   </div>
   
   <script>
-    // Firebase Configuration
+    // Firebase Configuration - আপনার Firebase কনফিগারেশন এখানে বসান
     const firebaseConfig = {
-      apiKey: "AIzaSyC4R6ANR2e2pY7jYv6pJ7K8Xq9Z0wXyZ1A2B",
-      authDomain: "daily-earning545.firebaseapp.com",
-      projectId: "daily-earning545",
-      storageBucket: "daily-earning545.appspot.com",
-      messagingSenderId: "123456789012",
-      appId: "1:123456789012:web:abcdef123456"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
 
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
+    
+    // Telegram Bot API
+    const BOT_TOKEN = "7811173242:AAGeYgntYuB906-hMhovnk5PE_pxHbtgFhs";
+    
+    // Admin User ID - এখানে আপনার Telegram User ID বসান
+    const ADMIN_USER_ID = "YOUR_TELEGRAM_USER_ID";
     
     // Firebase Authentication
     auth.signInAnonymously()
@@ -1028,55 +1024,74 @@
         console.error('Authentication error:', error);
       });
 
-    // Generate persistent user ID and username
-    let userId = localStorage.getItem("userId");
-    let username = localStorage.getItem("username");
-    
-    // If not stored, generate new values
-    if (!userId) {
-      userId = Math.floor(Math.random() * 1000000);
+    // Telegram User Data
+    let userId = null;
+    let username = null;
+    let telegramData = null;
+
+    // Check if we're in Telegram WebApp
+    if (window.Telegram && window.Telegram.WebApp) {
+      telegramData = window.Telegram.WebApp.initDataUnsafe;
+      userId = telegramData.user.id;
+      username = telegramData.user.username || 
+                (telegramData.user.first_name + (telegramData.user.last_name ? ' ' + telegramData.user.last_name : ''));
+      
+      // Save to localStorage
       localStorage.setItem("userId", userId);
-    }
-    
-    if (!username) {
-      // Check if we're in Telegram environment
-      if (window.Telegram && window.Telegram.WebApp) {
-        const user = window.Telegram.WebApp.initDataUnsafe.user;
-        if (user && user.username) {
-          username = user.username;
-        } else if (user && user.first_name) {
-          username = user.first_name;
-          if (user.last_name) username += " " + user.last_name;
-        } else {
-          username = "User" + userId;
-        }
-      } else {
-        username = "User" + userId;
-      }
       localStorage.setItem("username", username);
+      localStorage.setItem("telegramData", JSON.stringify(telegramData));
+    } else {
+      // Fallback to localStorage data
+      userId = localStorage.getItem("userId");
+      username = localStorage.getItem("username");
+      telegramData = JSON.parse(localStorage.getItem("telegramData") || "{}");
+      
+      if (!userId) {
+        userId = Math.floor(Math.random() * 1000000);
+        localStorage.setItem("userId", userId);
+      }
+      
+      if (!username) {
+        username = "User" + userId;
+        localStorage.setItem("username", username);
+      }
     }
-    
+
     const today = new Date().toLocaleDateString();
 
     // Initialize user data
-    let userData = JSON.parse(localStorage.getItem("MTEarningData")) || {
-      userId, 
-      username, 
+    let userData = {
+      userId: userId,
+      username: username,
+      telegramId: telegramData.user?.id || null,
+      firstName: telegramData.user?.first_name || '',
+      lastName: telegramData.user?.last_name || '',
       referrals: 0,
       referralEarnings: 0,
       pendingReferrals: 0,
+      activeReferrals: 0,
       lifetimeEarning: 0,
       withdrew: 0,
       totalTasks: 0,
-      joinDate: new Date().toLocaleDateString()
+      joinDate: new Date().toLocaleDateString(),
+      referredBy: getReferrerFromURL()
     };
 
-    let data = JSON.parse(localStorage.getItem("dailyEarningData")) || {
-      date: today, completed: 0, remaining: 100, todaysEarning: 0
+    let data = {
+      date: today, 
+      completed: 0, 
+      remaining: 100, 
+      todaysEarning: 0
     };
 
-    if (data.date !== today) {
-      data = { date: today, completed: 0, remaining: 100, todaysEarning: 0 };
+    // Check for referral in URL
+    function getReferrerFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const refParam = urlParams.get('start');
+      if (refParam && refParam.startsWith('ref_')) {
+        return refParam.replace('ref_', '');
+      }
+      return null;
     }
 
     // Firebase user data sync
@@ -1088,14 +1103,109 @@
           const firebaseData = doc.data();
           // Merge Firebase data with local data
           userData = { ...userData, ...firebaseData };
-          updateStorage();
-          updateDisplay();
+          
+          // Check if today's data exists
+          const todayDataRef = db.collection('dailyData').doc(`${userId}_${today}`);
+          todayDataRef.get().then((todayDoc) => {
+            if (todayDoc.exists) {
+              const todayData = todayDoc.data();
+              data = { ...data, ...todayData };
+            } else {
+              // Create today's data
+              todayDataRef.set(data);
+            }
+            updateStorage();
+            updateDisplay();
+          });
         } else {
           // Create new user in Firebase
           userRef.set(userData);
+          
+          // Create today's data
+          const todayDataRef = db.collection('dailyData').doc(`${userId}_${today}`);
+          todayDataRef.set(data);
+          
+          // Process referral if exists
+          if (userData.referredBy) {
+            processReferral(userData.referredBy);
+          }
         }
       }).catch((error) => {
         console.error("Error getting user data:", error);
+      });
+    }
+
+    // Process referral system
+    function processReferral(referrerId) {
+      const referrerRef = db.collection('users').doc(referrerId);
+      
+      referrerRef.get().then((doc) => {
+        if (doc.exists) {
+          const referrerData = doc.data();
+          
+          // Add to pending referrals
+          referrerRef.update({
+            pendingReferrals: firebase.firestore.FieldValue.increment(1)
+          });
+          
+          // Create referral record
+          const referralRef = db.collection('referrals').doc();
+          referralRef.set({
+            referrerId: referrerId,
+            referredUserId: userId,
+            status: 'pending',
+            createdAt: new Date(),
+            bonusAmount: 0.50
+          });
+          
+          showNotification("🎉 Referral registered! You joined via referral link.", "success");
+        }
+      });
+    }
+
+    // Check and activate referrals
+    function checkReferralActivation() {
+      if (userData.lifetimeEarning >= 30) {
+        const referralsRef = db.collection('referrals')
+          .where('referredUserId', '==', userId)
+          .where('status', '==', 'pending');
+        
+        referralsRef.get().then((querySnapshot) => {
+          querySnapshot.forEach((doc) => {
+            const referral = doc.data();
+            const referrerRef = db.collection('users').doc(referral.referrerId);
+            
+            // Activate referral
+            doc.ref.update({ status: 'active' });
+            
+            // Update referrer's stats
+            referrerRef.update({
+              pendingReferrals: firebase.firestore.FieldValue.increment(-1),
+              activeReferrals: firebase.firestore.FieldValue.increment(1),
+              referralEarnings: firebase.firestore.FieldValue.increment(0.50),
+              lifetimeEarning: firebase.firestore.FieldValue.increment(0.50)
+            });
+            
+            // Send notification to referrer via Telegram bot
+            sendTelegramNotification(referral.referrerId, 
+              `🎉 Congratulations! Your referral has earned $30 and you received $0.50 bonus!`);
+          });
+        });
+      }
+    }
+
+    // Send Telegram notification
+    function sendTelegramNotification(telegramUserId, message) {
+      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: telegramUserId,
+          text: message,
+          parse_mode: 'HTML'
+        })
       });
     }
 
@@ -1110,6 +1220,9 @@
       // Sync with Firebase
       const userRef = db.collection('users').doc(userId.toString());
       userRef.set(userData, { merge: true });
+      
+      const todayDataRef = db.collection('dailyData').doc(`${userId}_${today}`);
+      todayDataRef.set(data, { merge: true });
     }
 
     function updateDisplay() {
@@ -1134,7 +1247,7 @@
       
       // Update referral section
       document.getElementById("ref-earned").innerText = "$" + userData.referralEarnings.toFixed(2);
-      document.getElementById("referral-count").innerText = userData.referrals;
+      document.getElementById("referral-count").innerText = userData.activeReferrals;
       document.getElementById("ref-link").innerText = `https://t.me/Daily_Earning_545_Bot?start=ref_${userId}`;
       
       // Update profile page
@@ -1142,7 +1255,7 @@
       document.getElementById("profile-user-id").innerText = userId;
       document.getElementById("profile-balance").innerText = "$" + userData.lifetimeEarning.toFixed(3);
       document.getElementById("profile-withdrew").innerText = "$" + userData.withdrew.toFixed(3);
-      document.getElementById("profile-refer-count").innerText = userData.referrals;
+      document.getElementById("profile-refer-count").innerText = userData.activeReferrals;
       document.getElementById("profile-refer-earnings").innerText = "$" + userData.referralEarnings.toFixed(3);
       document.getElementById("profile-today-earning").innerText = "$" + data.todaysEarning.toFixed(3);
       document.getElementById("profile-lifetime-earning").innerText = "$" + userData.lifetimeEarning.toFixed(3);
@@ -1273,6 +1386,9 @@
         userData.lifetimeEarning += 0.025;
         userData.totalTasks++;
         
+        // Check referral activation
+        checkReferralActivation();
+        
         // Save to Firebase
         updateStorage();
         updateDisplay();
@@ -1314,8 +1430,8 @@
         showNotification("Insufficient balance", "error");
         return;
       }
-      if (userData.referrals < 10) {
-        showNotification("You need at least 10 referrals to withdraw", "error");
+      if (userData.activeReferrals < 10) {
+        showNotification("You need at least 10 active referrals to withdraw", "error");
         return;
       }
       if (method === "Select a method") {
@@ -1329,14 +1445,26 @@
       
       // Record withdrawal in Firebase
       const withdrawalRef = db.collection('withdrawals').doc();
-      withdrawalRef.set({
+      const withdrawalData = {
         userId: userId,
+        username: username,
         amount: amount,
         method: method,
         address: address,
         status: 'pending',
         requestedAt: new Date()
-      });
+      };
+      
+      withdrawalRef.set(withdrawalData);
+      
+      // Send notification to admin
+      sendTelegramNotification(ADMIN_USER_ID, 
+        `💰 New Withdrawal Request!\n\n` +
+        `User: ${username} (ID: ${userId})\n` +
+        `Amount: $${amount}\n` +
+        `Method: ${method}\n` +
+        `Address: ${address}\n\n` +
+        `Please process this withdrawal request.`);
       
       // Update balance
       userData.lifetimeEarning -= amount;
