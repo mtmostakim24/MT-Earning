@@ -561,6 +561,60 @@
       border-left: 4px solid var(--warning);
     }
     
+    /* Timer Modal */
+    .timer-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .timer-content {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      max-width: 90%;
+      width: 400px;
+    }
+    
+    .timer-circle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      color: white;
+      font-size: 2.5rem;
+      font-weight: 700;
+      position: relative;
+    }
+    
+    .timer-circle::before {
+      content: '';
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .timer-text {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      color: var(--dark);
+    }
+    
     /* Responsive */
     @media (min-width: 768px) {
       .cards-container {
@@ -584,6 +638,17 @@
   <div class="notification" id="notification">
     <i class="fas fa-check-circle"></i>
     <span id="notification-message">Notification message</span>
+  </div>
+  
+  <!-- Timer Modal -->
+  <div class="timer-modal" id="timer-modal">
+    <div class="timer-content">
+      <div class="timer-circle" id="timer-circle">45</div>
+      <div class="timer-text">Please wait <span id="timer-text">45</span> seconds to complete the task</div>
+      <button class="button" id="close-timer" style="display:none;">
+        <i class="fas fa-check"></i> Complete Task
+      </button>
+    </div>
   </div>
   
   <header>
@@ -940,14 +1005,14 @@
   <script>
     // Firebase Configuration
     const firebaseConfig = {
-  apiKey: "AIzaSyAMiWM1Zj2QufayKhhzuguEhyLKsGqenQc",
-  authDomain: "daily-earning545.firebaseapp.com",
-  projectId: "daily-earning545",
-  storageBucket: "daily-earning545.firebasestorage.app",
-  messagingSenderId: "571290181984",
-  appId: "1:571290181984:web:c707440c20361892f73e05",
-  measurementId: "G-5XVW7S9TVK"
-};
+      apiKey: "AIzaSyAMiWM1Zj2QufayKhhzuguEhyLKsGqenQc",
+      authDomain: "daily-earning545.firebaseapp.com",
+      projectId: "daily-earning545",
+      storageBucket: "daily-earning545.firebasestorage.app",
+      messagingSenderId: "571290181984",
+      appId: "1:571290181984:web:c707440c20361892f73e05",
+      measurementId: "G-5XVW7S9TVK"
+    };
 
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
@@ -964,17 +1029,52 @@
     let username = null;
     let telegramData = null;
 
-    // Check if we're in Telegram WebApp
-    if (window.Telegram && window.Telegram.WebApp) {
-      telegramData = window.Telegram.WebApp.initDataUnsafe;
-      userId = telegramData.user.id;
-      username = telegramData.user.username || 
-                (telegramData.user.first_name + (telegramData.user.last_name ? ' ' + telegramData.user.last_name : ''));
-      
-      // Save to localStorage
-      localStorage.setItem("userId", userId);
-      localStorage.setItem("username", username);
-      localStorage.setItem("telegramData", JSON.stringify(telegramData));
+    // ✅ সঠিকভাবে Telegram User Data পাওয়ার জন্য
+    function initializeTelegramUser() {
+      if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        
+        // Telegram WebApp initialization
+        tg.ready();
+        tg.expand();
+        
+        const user = tg.initDataUnsafe?.user;
+        
+        if (user) {
+          userId = user.id.toString();
+          username = user.username || user.first_name || 'User';
+          
+          // Full name তৈরি করুন
+          let fullName = user.first_name || '';
+          if (user.last_name) fullName += ' ' + user.last_name;
+          if (!fullName.trim()) fullName = 'User' + userId;
+          
+          console.log('Telegram User Data:', {
+            id: userId,
+            username: username,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            fullName: fullName
+          });
+          
+          // Save to localStorage
+          localStorage.setItem("userId", userId);
+          localStorage.setItem("username", fullName);
+          localStorage.setItem("telegramData", JSON.stringify(user));
+          
+          return { userId, username: fullName, telegramData: user };
+        }
+      }
+      return null;
+    }
+
+    // ✅ Telegram user initialize করুন
+    const telegramUser = initializeTelegramUser();
+
+    if (telegramUser) {
+      userId = telegramUser.userId;
+      username = telegramUser.username;
+      telegramData = telegramUser.telegramData;
     } else {
       // Fallback to localStorage data
       userId = localStorage.getItem("userId");
@@ -982,7 +1082,7 @@
       telegramData = JSON.parse(localStorage.getItem("telegramData") || "{}");
       
       if (!userId) {
-        userId = Math.floor(Math.random() * 1000000);
+        userId = Math.floor(100000 + Math.random() * 900000).toString();
         localStorage.setItem("userId", userId);
       }
       
@@ -994,13 +1094,13 @@
 
     const today = new Date().toLocaleDateString();
 
-    // Initialize user data
+    // ✅ সঠিকভাবে User Data initialize করুন
     let userData = {
       userId: userId,
       username: username,
-      telegramId: telegramData.user?.id || null,
-      firstName: telegramData.user?.first_name || '',
-      lastName: telegramData.user?.last_name || '',
+      telegramId: telegramData?.id || userId,
+      firstName: telegramData?.first_name || '',
+      lastName: telegramData?.last_name || '',
       referrals: 0,
       referralEarnings: 0,
       pendingReferrals: 0,
@@ -1012,7 +1112,13 @@
       referredBy: getReferrerFromURL()
     };
 
-    let data = {
+    // Load from localStorage if exists
+    const savedUserData = JSON.parse(localStorage.getItem("MTEarningData"));
+    if (savedUserData) {
+      userData = { ...userData, ...savedUserData, userId, username };
+    }
+
+    let data = JSON.parse(localStorage.getItem("dailyEarningData")) || {
       date: today, 
       completed: 0, 
       remaining: 100, 
@@ -1031,43 +1137,61 @@
 
     // Firebase user data sync
     function syncUserData() {
-      const userRef = db.collection('users').doc(userId.toString());
-      
-      userRef.get().then((doc) => {
-        if (doc.exists) {
-          const firebaseData = doc.data();
-          // Merge Firebase data with local data
-          userData = { ...userData, ...firebaseData };
-          
-          // Check if today's data exists
-          const todayDataRef = db.collection('dailyData').doc(`${userId}_${today}`);
-          todayDataRef.get().then((todayDoc) => {
-            if (todayDoc.exists) {
-              const todayData = todayDoc.data();
-              data = { ...data, ...todayData };
-            } else {
-              // Create today's data
-              todayDataRef.set(data);
+      try {
+        const userRef = db.collection('users').doc(userId.toString());
+        
+        userRef.get().then((doc) => {
+          if (doc.exists) {
+            const firebaseData = doc.data();
+            // Merge Firebase data with local data (but keep current username and ID)
+            userData = { 
+              ...firebaseData, 
+              userId: userId,
+              username: username,
+              telegramId: telegramData?.id || userId
+            };
+            
+            // Check if today's data exists
+            const todayDataRef = db.collection('dailyData').doc(`${userId}_${today}`);
+            todayDataRef.get().then((todayDoc) => {
+              if (todayDoc.exists) {
+                const todayData = todayDoc.data();
+                data = { ...data, ...todayData };
+              } else {
+                // Create today's data
+                todayDataRef.set(data);
+              }
+              updateStorage();
+              updateDisplay();
+            });
+          } else {
+            // Create new user in Firebase
+            userRef.set(userData);
+            
+            // Create today's data
+            const todayDataRef = db.collection('dailyData').doc(`${userId}_${today}`);
+            todayDataRef.set(data);
+            
+            // Process referral if exists
+            if (userData.referredBy) {
+              processReferral(userData.referredBy);
             }
+            
             updateStorage();
             updateDisplay();
-          });
-        } else {
-          // Create new user in Firebase
-          userRef.set(userData);
-          
-          // Create today's data
-          const todayDataRef = db.collection('dailyData').doc(`${userId}_${today}`);
-          todayDataRef.set(data);
-          
-          // Process referral if exists
-          if (userData.referredBy) {
-            processReferral(userData.referredBy);
           }
-        }
-      }).catch((error) => {
-        console.error("Error getting user data:", error);
-      });
+        }).catch((error) => {
+          console.error("Error getting user data:", error);
+          // Fallback to local storage
+          updateStorage();
+          updateDisplay();
+        });
+      } catch (error) {
+        console.error("Firebase sync error:", error);
+        // Fallback to local storage
+        updateStorage();
+        updateDisplay();
+      }
     }
 
     // Process referral system
@@ -1141,29 +1265,32 @@
           text: message,
           parse_mode: 'HTML'
         })
-      });
+      }).catch(error => console.error('Telegram notification error:', error));
     }
-
-    // Initialize display
-    updateDisplay();
-    syncUserData();
 
     function updateStorage() {
       localStorage.setItem("MTEarningData", JSON.stringify(userData));
       localStorage.setItem("dailyEarningData", JSON.stringify(data));
       
-      // Sync with Firebase
-      const userRef = db.collection('users').doc(userId.toString());
-      userRef.set(userData, { merge: true });
-      
-      const todayDataRef = db.collection('dailyData').doc(`${userId}_${today}`);
-      todayDataRef.set(data, { merge: true });
+      // Sync with Firebase if available
+      try {
+        const userRef = db.collection('users').doc(userId.toString());
+        userRef.set(userData, { merge: true });
+        
+        const todayDataRef = db.collection('dailyData').doc(`${userId}_${today}`);
+        todayDataRef.set(data, { merge: true });
+      } catch (error) {
+        console.error("Firebase update error:", error);
+      }
     }
 
+    // ✅ সঠিকভাবে Display Update করুন
     function updateDisplay() {
+      console.log('Updating display with:', userData);
+      
       // Update home screen
-      document.getElementById("username").innerText = username;
-      document.getElementById("user-id").innerText = userId;
+      document.getElementById("username").innerText = userData.username;
+      document.getElementById("user-id").innerText = userData.userId;
       document.getElementById("completed-card").innerText = data.completed;
       document.getElementById("remaining-card").innerText = data.remaining;
       document.getElementById("todays-earning").innerText = data.todaysEarning.toFixed(3);
@@ -1183,11 +1310,11 @@
       // Update referral section
       document.getElementById("ref-earned").innerText = "$" + userData.referralEarnings.toFixed(2);
       document.getElementById("referral-count").innerText = userData.activeReferrals;
-      document.getElementById("ref-link").innerText = `https://t.me/Daily_Earning_545_Bot?start=ref_${userId}`;
+      document.getElementById("ref-link").innerText = `https://t.me/Daily_Earning_545_Bot?start=ref_${userData.userId}`;
       
       // Update profile page
-      document.getElementById("profile-username").innerText = username;
-      document.getElementById("profile-user-id").innerText = userId;
+      document.getElementById("profile-username").innerText = userData.username;
+      document.getElementById("profile-user-id").innerText = userData.userId;
       document.getElementById("profile-balance").innerText = "$" + userData.lifetimeEarning.toFixed(3);
       document.getElementById("profile-withdrew").innerText = "$" + userData.withdrew.toFixed(3);
       document.getElementById("profile-refer-count").innerText = userData.activeReferrals;
@@ -1196,7 +1323,7 @@
       document.getElementById("profile-lifetime-earning").innerText = "$" + userData.lifetimeEarning.toFixed(3);
       document.getElementById("join-date").innerText = userData.joinDate;
       document.getElementById("profile-pending-refs").innerText = userData.pendingReferrals;
-      document.getElementById("profile-ref-link").innerText = `https://t.me/Daily_Earning_545_Bot?start=ref_${userId}`;
+      document.getElementById("profile-ref-link").innerText = `https://t.me/Daily_Earning_545_Bot?start=ref_${userData.userId}`;
       
       // Update earn section
       document.getElementById("ecompleted").innerText = data.completed;
@@ -1253,6 +1380,9 @@
       "https://tomake-chai-vlona.vercel.app"
     ];
 
+    let currentTimer = null;
+    let timerInterval = null;
+
     function showNotification(message, type) {
       const notification = document.getElementById("notification");
       const messageElement = document.getElementById("notification-message");
@@ -1272,37 +1402,77 @@
         return;
       }
       
-      const start = Date.now();
-      const ad = window.open(taskLinks[data.completed % taskLinks.length], "_blank");
+      // Show timer modal
+      const timerModal = document.getElementById("timer-modal");
+      const timerCircle = document.getElementById("timer-circle");
+      const timerText = document.getElementById("timer-text");
+      const closeTimer = document.getElementById("close-timer");
       
-      if (!ad) {
-        showNotification("Please allow popups to complete tasks", "error");
-        return;
-      }
+      timerModal.style.display = "flex";
+      closeTimer.style.display = "none";
       
-      const check = setInterval(() => {
-        if (ad.closed) {
-          clearInterval(check);
-          const duration = (Date.now() - start) / 1000;
-          
-          if (duration >= 45) {
-            data.completed++;
-            data.remaining = 100 - data.completed;
-            data.todaysEarning += 0.025;
-            userData.lifetimeEarning += 0.025;
-            userData.totalTasks++;
-            
-            // Check referral activation
-            checkReferralActivation();
-            
-            updateStorage();
-            updateDisplay();
-            showNotification("✅ Task completed! $0.025 added to your balance.", "success");
-          } else {
-            showNotification("⏱️ You must view the ad for at least 45 seconds to complete the task!", "error");
-          }
+      let seconds = 45;
+      timerCircle.textContent = seconds;
+      timerText.textContent = seconds;
+      
+      // Start countdown
+      timerInterval = setInterval(() => {
+        seconds--;
+        timerCircle.textContent = seconds;
+        timerText.textContent = seconds;
+        
+        if (seconds <= 0) {
+          clearInterval(timerInterval);
+          closeTimer.style.display = "block";
+          showNotification("Task completed! Click 'Complete Task' to claim your reward.", "success");
         }
-      }, 500);
+      }, 1000);
+      
+      // Store the current task
+      currentTimer = {
+        startTime: Date.now(),
+        taskIndex: data.completed % taskLinks.length
+      };
+    }
+
+    function completeTask() {
+      if (!currentTimer) return;
+      
+      const duration = (Date.now() - currentTimer.startTime) / 1000;
+      
+      if (duration >= 45) {
+        // Task completed successfully
+        data.completed++;
+        data.remaining = 100 - data.completed;
+        data.todaysEarning += 0.025;
+        userData.lifetimeEarning += 0.025;
+        userData.totalTasks++;
+        
+        // Check referral activation
+        checkReferralActivation();
+        
+        // Save to Firebase
+        updateStorage();
+        updateDisplay();
+        
+        // Close timer modal
+        document.getElementById("timer-modal").style.display = "none";
+        clearInterval(timerInterval);
+        currentTimer = null;
+        
+        showNotification("✅ Task completed! $0.025 added to your balance.", "success");
+        
+        // Record task completion in Firebase
+        const taskRef = db.collection('tasks').doc();
+        taskRef.set({
+          userId: userId,
+          taskIndex: currentTimer.taskIndex,
+          completedAt: new Date(),
+          earnings: 0.025
+        });
+      } else {
+        showNotification("⏱️ You must wait for the full 45 seconds to complete the task!", "error");
+      }
     }
 
     function submitWithdrawal() {
@@ -1350,13 +1520,15 @@
       withdrawalRef.set(withdrawalData);
       
       // Send notification to admin
-      sendTelegramNotification(ADMIN_USER_ID, 
-        `💰 New Withdrawal Request!\n\n` +
-        `User: ${username} (ID: ${userId})\n` +
-        `Amount: $${amount}\n` +
-        `Method: ${method}\n` +
-        `Address: ${address}\n\n` +
-        `Please process this withdrawal request.`);
+      if (ADMIN_USER_ID !== "YOUR_TELEGRAM_USER_ID") {
+        sendTelegramNotification(ADMIN_USER_ID, 
+          `💰 New Withdrawal Request!\n\n` +
+          `User: ${username} (ID: ${userId})\n` +
+          `Amount: $${amount}\n` +
+          `Method: ${method}\n` +
+          `Address: ${address}\n\n` +
+          `Please process this withdrawal request.`);
+      }
       
       // Update balance
       userData.lifetimeEarning -= amount;
@@ -1431,21 +1603,29 @@
 
     // Initialize task visualization
     updateTaskVisualization();
+    
+    // Set up event listeners
+    document.getElementById("close-timer").addEventListener("click", completeTask);
+
+    // Initialize the app
+    console.log('App initialization started');
+    console.log('User data:', userData);
+    
+    // Start syncing and display
+    syncUserData();
   </script>
   
   <script>
   fetch("https://ipapi.co/json/")
     .then(response => response.json())
     .then(data => {
-      let country = data.country;   // দেশ কোড (BD, IN ইত্যাদি)
-      let timezone = data.timezone; // টাইমজোন (Asia/Dhaka, Asia/Kolkata ইত্যাদি)
+      let country = data.country;
+      let timezone = data.timezone;
 
       if( (country === "BD" && timezone === "Asia/Dhaka") || 
           (country === "IN" && timezone === "Asia/Kolkata") ) {
-        // অনুমতি দেওয়া হলো
         console.log("Access Allowed:", country, timezone);
       } else {
-        // ব্লক করা হবে
         document.body.innerHTML = "<h2 style='color:red;text-align:center;'>❌ Access Denied ❌<br>Daily Earning545 Bot এ VPN দিয়ে কাজ করতে পারবে না। ⚠ আপনি যদি VPN ব‍্যবহার করেন, অনুগ্রহ করে VPN বন্ধ করে আবার চেষ্টা করুন ধন্যবাদ🌺</h2>";
       }
     })
