@@ -8,7 +8,6 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <style>
     * {
       margin: 0;
@@ -562,60 +561,6 @@
       border-left: 4px solid var(--warning);
     }
     
-    /* Timer Modal */
-    .timer-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      display: none;
-    }
-    
-    .timer-content {
-      background: white;
-      border-radius: 20px;
-      padding: 30px;
-      text-align: center;
-      max-width: 90%;
-      width: 400px;
-    }
-    
-    .timer-circle {
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      background: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 20px;
-      color: white;
-      font-size: 2.5rem;
-      font-weight: 700;
-      position: relative;
-    }
-    
-    .timer-circle::before {
-      content: '';
-      position: absolute;
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-    }
-    
-    .timer-text {
-      font-size: 1.2rem;
-      margin-bottom: 20px;
-      color: var(--dark);
-    }
-    
     /* Responsive */
     @media (min-width: 768px) {
       .cards-container {
@@ -640,7 +585,6 @@
     <i class="fas fa-check-circle"></i>
     <span id="notification-message">Notification message</span>
   </div>
-  
   
   <header>
     <div class="title">
@@ -994,7 +938,7 @@
   </div>
   
   <script>
-    // Firebase Configuration - আপনার Firebase কনফিগারেশন এখানে বসান
+    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_AUTH_DOMAIN",
@@ -1007,22 +951,12 @@
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const auth = firebase.auth();
-    
+
     // Telegram Bot API
     const BOT_TOKEN = "7811173242:AAGeYgntYuB906-hMhovnk5PE_pxHbtgFhs";
     
     // Admin User ID - এখানে আপনার Telegram User ID বসান
     const ADMIN_USER_ID = "YOUR_TELEGRAM_USER_ID";
-    
-    // Firebase Authentication
-    auth.signInAnonymously()
-      .then(() => {
-        console.log('Signed in anonymously');
-      })
-      .catch((error) => {
-        console.error('Authentication error:', error);
-      });
 
     // Telegram User Data
     let userId = null;
@@ -1318,9 +1252,6 @@
       "https://tomake-chai-vlona.vercel.app"
     ];
 
-    let currentTimer = null;
-    let timerInterval = null;
-
     function showNotification(message, type) {
       const notification = document.getElementById("notification");
       const messageElement = document.getElementById("notification-message");
@@ -1340,77 +1271,37 @@
         return;
       }
       
-      // Show timer modal
-      const timerModal = document.getElementById("timer-modal");
-      const timerCircle = document.getElementById("timer-circle");
-      const timerText = document.getElementById("timer-text");
-      const closeTimer = document.getElementById("close-timer");
+      const start = Date.now();
+      const ad = window.open(taskLinks[data.completed % taskLinks.length], "_blank");
       
-      timerModal.style.display = "flex";
-      closeTimer.style.display = "none";
-      
-      let seconds = 45;
-      timerCircle.textContent = seconds;
-      timerText.textContent = seconds;
-      
-      // Start countdown
-      timerInterval = setInterval(() => {
-        seconds--;
-        timerCircle.textContent = seconds;
-        timerText.textContent = seconds;
-        
-        if (seconds <= 0) {
-          clearInterval(timerInterval);
-          closeTimer.style.display = "block";
-          showNotification("Task completed! Click 'Complete Task' to claim your reward.", "success");
-        }
-      }, 1000);
-      
-      // Store the current task
-      currentTimer = {
-        startTime: Date.now(),
-        taskIndex: data.completed % taskLinks.length
-      };
-    }
-
-    function completeTask() {
-      if (!currentTimer) return;
-      
-      const duration = (Date.now() - currentTimer.startTime) / 1000;
-      
-      if (duration >= 45) {
-        // Task completed successfully
-        data.completed++;
-        data.remaining = 100 - data.completed;
-        data.todaysEarning += 0.025;
-        userData.lifetimeEarning += 0.025;
-        userData.totalTasks++;
-        
-        // Check referral activation
-        checkReferralActivation();
-        
-        // Save to Firebase
-        updateStorage();
-        updateDisplay();
-        
-        // Close timer modal
-        document.getElementById("timer-modal").style.display = "none";
-        clearInterval(timerInterval);
-        currentTimer = null;
-        
-        showNotification("✅ Task completed! $0.025 added to your balance.", "success");
-        
-        // Record task completion in Firebase
-        const taskRef = db.collection('tasks').doc();
-        taskRef.set({
-          userId: userId,
-          taskIndex: currentTimer.taskIndex,
-          completedAt: new Date(),
-          earnings: 0.025
-        });
-      } else {
-        showNotification("⏱️ You must wait for the full 45 seconds to complete the task!", "error");
+      if (!ad) {
+        showNotification("Please allow popups to complete tasks", "error");
+        return;
       }
+      
+      const check = setInterval(() => {
+        if (ad.closed) {
+          clearInterval(check);
+          const duration = (Date.now() - start) / 1000;
+          
+          if (duration >= 45) {
+            data.completed++;
+            data.remaining = 100 - data.completed;
+            data.todaysEarning += 0.025;
+            userData.lifetimeEarning += 0.025;
+            userData.totalTasks++;
+            
+            // Check referral activation
+            checkReferralActivation();
+            
+            updateStorage();
+            updateDisplay();
+            showNotification("✅ Task completed! $0.025 added to your balance.", "success");
+          } else {
+            showNotification("⏱️ You must view the ad for at least 45 seconds to complete the task!", "error");
+          }
+        }
+      }, 500);
     }
 
     function submitWithdrawal() {
@@ -1539,9 +1430,6 @@
 
     // Initialize task visualization
     updateTaskVisualization();
-    
-    // Set up event listeners
-    document.getElementById("close-timer").addEventListener("click", completeTask);
   </script>
   
   <script>
