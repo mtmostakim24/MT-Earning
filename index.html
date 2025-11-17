@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daily Earning545 | Premium Earning Platform</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * {
       margin: 0;
@@ -558,6 +559,27 @@
       border-left: 4px solid var(--warning);
     }
     
+    /* Loading Spinner */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(67, 97, 238, 0.1);
+      border-left-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
     /* Responsive */
     @media (min-width: 768px) {
       .cards-container {
@@ -598,11 +620,11 @@
     <div class="profile">
       <div class="profile-header">
         <div class="profile-img-container">
-          <img src="https://i.ibb.co/6R45cM6C/Polish-20250529-015530961.jpg" alt="Profile">
+          <img id="profile-picture" src="https://i.ibb.co/6R45cM6C/Polish-20250529-015530961.jpg" alt="Profile">
         </div>
         <div class="profile-info">
-          <div class="name" id="username">Username</div>
-          <div class="user-id">ID: <span id="user-id">123456</span></div>
+          <div class="name" id="username">Loading...</div>
+          <div class="user-id">ID: <span id="user-id">Loading...</span></div>
         </div>
       </div>
       
@@ -698,7 +720,7 @@
         </div>
         
         <div class="referral-link">
-          <span id="ref-link">https://t.me/Daily_Earning_545_Bot?start=ref_123456</span>
+          <span id="ref-link">Loading...</span>
           <i class="fas fa-copy" onclick="copyReferralLink()"></i>
         </div>
         
@@ -818,17 +840,17 @@
         
         <div class="profile-info-item">
           <div class="info-title">Username</div>
-          <div class="info-data" id="profile-username">Username</div>
+          <div class="info-data" id="profile-username">Loading...</div>
         </div>
         
         <div class="profile-info-item">
           <div class="info-title">User ID</div>
-          <div class="info-data" id="profile-user-id">123456</div>
+          <div class="info-data" id="profile-user-id">Loading...</div>
         </div>
         
         <div class="profile-info-item">
           <div class="info-title">Join Date</div>
-          <div class="info-data" id="join-date">2023-10-15</div>
+          <div class="info-data" id="join-date">Loading...</div>
         </div>
       </div>
     </div>
@@ -896,7 +918,7 @@
         <p>Earn $0.50 for every friend who signs up using your referral link!</p>
         
         <div class="referral-link">
-          <span id="profile-ref-link">https://t.me/Daily_Earning_545_Bot?start=ref_123456</span>
+          <span id="profile-ref-link">Loading...</span>
           <i class="fas fa-copy" onclick="copyReferralLink()"></i>
         </div>
         
@@ -935,85 +957,145 @@
   </div>
   
   <script>
-    // Telegram Bot API configuration
-    const BOT_TOKEN = "7811173242:AAGeYgntYuB906-hMhovnk5PE_pxHbtgFhs";
-    const BOT_API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
+    // Telegram Bot API Configuration
+    const BOT_TOKEN = "7886120175:AAEq3IrdoIEVQ-rPV0o0HeByBpbzeL2buGE"; // Replace with your bot token
+    const API_BASE_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
     
     // Global variables
-    let userId, username, telegramId, referrerId;
-    let userData, data;
+    let userId = null;
+    let username = null;
+    let userData = null;
+    let data = null;
     
-    // Check for referral parameter in URL
-    function getUrlParameter(name) {
-      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-      const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-      const results = regex.exec(location.search);
-      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    // Initialize the app
+    async function initApp() {
+      try {
+        // Check if we're in Telegram environment
+        if (window.Telegram && window.Telegram.WebApp) {
+          await initTelegramUser();
+        } else {
+          // Fallback for testing outside Telegram
+          await initTestUser();
+        }
+        
+        // Initialize user data
+        await loadUserData();
+        
+        // Update display
+        updateDisplay();
+        
+        // Check for referral parameter
+        checkReferral();
+        
+      } catch (error) {
+        console.error("Error initializing app:", error);
+        showNotification("Error loading user data. Please try again.", "error");
+      }
     }
     
-    // Check if we're in Telegram WebApp
-    const isTelegramWebApp = window.Telegram && window.Telegram.WebApp;
-    
-    // Initialize user data
-    function initializeUser() {
-      // Check for referral parameter
-      const refParam = getUrlParameter('ref');
-      if (refParam) {
-        referrerId = refParam;
-        localStorage.setItem("referrerId", referrerId);
-      } else {
-        referrerId = localStorage.getItem("referrerId");
-      }
+    // Initialize Telegram user
+    async function initTelegramUser() {
+      const tg = window.Telegram.WebApp;
       
-      // Get stored values or generate new ones
+      // Expand the app to full height
+      tg.expand();
+      
+      // Get user data from Telegram
+      const user = tg.initDataUnsafe.user;
+      
+      if (user) {
+        userId = user.id;
+        username = user.username || `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`;
+        
+        // Update profile picture if available
+        if (user.photo_url) {
+          document.getElementById("profile-picture").src = user.photo_url;
+        }
+        
+        // Store user info in localStorage
+        localStorage.setItem("userId", userId);
+        localStorage.setItem("username", username);
+        
+        console.log("Telegram user initialized:", { userId, username });
+      } else {
+        throw new Error("Could not get Telegram user data");
+      }
+    }
+    
+    // Initialize test user (for development outside Telegram)
+    async function initTestUser() {
       userId = localStorage.getItem("userId");
       username = localStorage.getItem("username");
-      telegramId = localStorage.getItem("telegramId");
       
       // If not stored, generate new values
       if (!userId) {
-        if (isTelegramWebApp) {
-          const user = window.Telegram.WebApp.initDataUnsafe.user;
-          if (user) {
-            telegramId = user.id;
-            userId = "tg_" + user.id;
-            
-            if (user.username) {
-              username = user.username;
-            } else if (user.first_name) {
-              username = user.first_name;
-              if (user.last_name) username += " " + user.last_name;
-            } else {
-              username = "User" + user.id;
-            }
-          } else {
-            // Fallback if user data not available
-            userId = "user_" + Math.floor(Math.random() * 1000000);
-            username = "User" + userId;
-          }
-        } else {
-          // Not in Telegram environment
-          userId = "user_" + Math.floor(Math.random() * 1000000);
-          username = "User" + userId;
-        }
-        
+        userId = Math.floor(Math.random() * 1000000);
         localStorage.setItem("userId", userId);
-        localStorage.setItem("username", username);
-        if (telegramId) localStorage.setItem("telegramId", telegramId);
-        
-        // If this is a new user with a referrer, process referral
-        if (referrerId) {
-          processReferral(referrerId, userId);
-        }
       }
       
+      if (!username) {
+        username = "User" + userId;
+        localStorage.setItem("username", username);
+      }
+      
+      console.log("Test user initialized:", { userId, username });
+    }
+    
+    // Load user data from server
+    async function loadUserData() {
       const today = new Date().toLocaleDateString();
       
-      // Load or initialize user data
+      try {
+        // Try to get user data from server
+        const response = await fetch(`${API_BASE_URL}/getUserData?user_id=${userId}`);
+        
+        if (response.ok) {
+          const serverData = await response.json();
+          userData = serverData.result || {};
+          
+          // If user doesn't exist on server, create them
+          if (!userData.userId) {
+            await createUserOnServer();
+          }
+        } else {
+          // If server request fails, use localStorage
+          await loadUserDataFromLocalStorage(today);
+        }
+      } catch (error) {
+        console.error("Error loading user data from server:", error);
+        // Fallback to localStorage
+        await loadUserDataFromLocalStorage(today);
+      }
+    }
+    
+    // Load user data from localStorage (fallback)
+    async function loadUserDataFromLocalStorage(today) {
       userData = JSON.parse(localStorage.getItem("MTEarningData")) || {
         userId, 
         username, 
-        telegramId,
+        referrals: 0,
+        referralEarnings: 0,
+        pendingReferrals: 0,
+        lifetimeEarning: 0,
+        withdrew: 0,
+        totalTasks: 0,
+        joinDate: new Date().toLocaleDateString()
+      };
+
+      data = JSON.parse(localStorage.getItem("dailyEarningData")) || {
+        date: today, completed: 0, remaining: 100, todaysEarning: 0
+      };
+
+      if (data.date !== today) {
+        data = { date: today, completed: 0, remaining: 100, todaysEarning: 0 };
+      }
+    }
+    
+    // Create user on server
+    async function createUserOnServer() {
+      userData = {
+        userId, 
+        username, 
         referrals: 0,
         referralEarnings: 0,
         pendingReferrals: 0,
@@ -1023,99 +1105,103 @@
         joinDate: new Date().toLocaleDateString()
       };
       
-      // Update with current values
-      userData.userId = userId;
-      userData.username = username;
-      if (telegramId) userData.telegramId = telegramId;
-      
-      // Initialize daily data
-      data = JSON.parse(localStorage.getItem("dailyEarningData")) || {
-        date: today, completed: 0, remaining: 100, todaysEarning: 0
-      };
-      
-      if (data.date !== today) {
-        data = { date: today, completed: 0, remaining: 100, todaysEarning: 0 };
-      }
-      
+      // In a real implementation, you would send this to your server
+      // For now, we'll just store it locally
       localStorage.setItem("MTEarningData", JSON.stringify(userData));
-      localStorage.setItem("dailyEarningData", JSON.stringify(data));
       
-      return { userData, data };
+      const today = new Date().toLocaleDateString();
+      data = { date: today, completed: 0, remaining: 100, todaysEarning: 0 };
+      localStorage.setItem("dailyEarningData", JSON.stringify(data));
     }
     
-    // Process referral when a new user signs up
-    function processReferral(referrerId, newUserId) {
+    // Update user data on server
+    async function updateUserDataOnServer() {
       try {
-        // Get referrer's data
-        let allUsersData = JSON.parse(localStorage.getItem("allUsersData")) || {};
+        // In a real implementation, you would send this to your server
+        // For now, we'll just store it locally
+        localStorage.setItem("MTEarningData", JSON.stringify(userData));
+        localStorage.setItem("dailyEarningData", JSON.stringify(data));
         
-        if (allUsersData[referrerId]) {
-          // Update referrer's data
-          allUsersData[referrerId].pendingReferrals = (allUsersData[referrerId].pendingReferrals || 0) + 1;
+        // Example of how you might send data to your server
+        // await fetch(`${API_BASE_URL}/updateUserData`, {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ user_id: userId, userData, data })
+        // });
+      } catch (error) {
+        console.error("Error updating user data on server:", error);
+      }
+    }
+    
+    // Check for referral parameter
+    function checkReferral() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const refParam = urlParams.get('start');
+      
+      if (refParam && refParam.startsWith('ref_')) {
+        const referrerId = refParam.substring(4);
+        
+        // Don't count self-referral
+        if (referrerId != userId) {
+          processReferral(referrerId);
+        }
+      }
+    }
+    
+    // Process referral
+    async function processReferral(referrerId) {
+      try {
+        // Check if this user was already referred
+        const referredBy = localStorage.getItem("referredBy");
+        
+        if (!referredBy) {
+          // Mark this user as referred
+          localStorage.setItem("referredBy", referrerId);
           
-          // Store updated data
-          localStorage.setItem("allUsersData", JSON.stringify(allUsersData));
+          // Add to referrer's pending referrals
+          // In a real implementation, you would update this on the server
+          // For now, we'll just show a notification
+          showNotification("You've been referred by a friend! Complete 100 tasks to activate the referral.", "success");
           
-          // Update current user's data to show they were referred
-          let userData = JSON.parse(localStorage.getItem("MTEarningData")) || {};
-          userData.referredBy = referrerId;
-          localStorage.setItem("MTEarningData", JSON.stringify(userData));
-          
-          console.log("Referral processed:", referrerId, "referred", newUserId);
-        } else {
-          // Initialize referrer data if not exists
-          allUsersData[referrerId] = {
-            referrals: 0,
-            referralEarnings: 0,
-            pendingReferrals: 1
-          };
-          localStorage.setItem("allUsersData", JSON.stringify(allUsersData));
-          
-          // Update current user's data to show they were referred
-          let userData = JSON.parse(localStorage.getItem("MTEarningData")) || {};
-          userData.referredBy = referrerId;
-          localStorage.setItem("MTEarningData", JSON.stringify(userData));
+          // Here you would update the referrer's data on the server
+          // await fetch(`${API_BASE_URL}/addPendingReferral`, {
+          //   method: 'POST',
+          //   headers: { 'Content-Type': 'application/json' },
+          //   body: JSON.stringify({ referrer_id: referrerId, referred_id: userId })
+          // });
         }
       } catch (error) {
         console.error("Error processing referral:", error);
       }
     }
     
-    // Update referral counts when a referred user completes tasks
-    function updateReferralStats(referredUserId) {
-      try {
-        let allUsersData = JSON.parse(localStorage.getItem("allUsersData")) || {};
-        let referredUserData = JSON.parse(localStorage.getItem("MTEarningData")) || {};
-        
-        if (referredUserData.referredBy && allUsersData[referredUserData.referredBy]) {
-          const referrerId = referredUserData.referredBy;
+    // Check and activate referrals when user completes tasks
+    async function checkReferralActivation() {
+      const referredBy = localStorage.getItem("referredBy");
+      
+      if (referredBy && userData.totalTasks >= 100) {
+        try {
+          // Activate the referral
+          // In a real implementation, you would update this on the server
+          // await fetch(`${API_BASE_URL}/activateReferral`, {
+          //   method: 'POST',
+          //   headers: { 'Content-Type': 'application/json' },
+          //   body: JSON.stringify({ referrer_id: referredBy, referred_id: userId })
+          // });
           
-          // Move from pending to confirmed referrals after some tasks
-          if (referredUserData.totalTasks >= 5) { // After 5 tasks
-            allUsersData[referrerId].pendingReferrals = Math.max(0, (allUsersData[referrerId].pendingReferrals || 0) - 1);
-            allUsersData[referrerId].referrals = (allUsersData[referrerId].referrals || 0) + 1;
-            allUsersData[referrerId].referralEarnings = (allUsersData[referrerId].referralEarnings || 0) + 0.50;
-            
-            // Update current user's data if they are the referrer
-            let currentUserData = JSON.parse(localStorage.getItem("MTEarningData")) || {};
-            if (currentUserData.userId === referrerId) {
-              currentUserData.pendingReferrals = allUsersData[referrerId].pendingReferrals;
-              currentUserData.referrals = allUsersData[referrerId].referrals;
-              currentUserData.referralEarnings = allUsersData[referrerId].referralEarnings;
-              localStorage.setItem("MTEarningData", JSON.stringify(currentUserData));
-            }
-            
-            localStorage.setItem("allUsersData", JSON.stringify(allUsersData));
-          }
+          // Clear the referral marker
+          localStorage.removeItem("referredBy");
+          
+          showNotification("Congratulations! Your referral has been activated.", "success");
+        } catch (error) {
+          console.error("Error activating referral:", error);
         }
-      } catch (error) {
-        console.error("Error updating referral stats:", error);
       }
     }
     
+    // Update storage
     function updateStorage() {
-      localStorage.setItem("MTEarningData", JSON.stringify(userData));
-      localStorage.setItem("dailyEarningData", JSON.stringify(data));
+      updateUserDataOnServer();
     }
 
     function updateDisplay() {
@@ -1208,7 +1294,97 @@
       "https://premium-sm-offer.vercel.app",
       "https://tomake-chai-vlona.vercel.app",
       "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app"
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
+      "https://premium-sm-offer.vercel.app",
+      "https://tomake-chai-vlona.vercel.app",
     ];
 
     function showNotification(message, type) {
@@ -1250,11 +1426,12 @@
             userData.lifetimeEarning += 0.025;
             userData.totalTasks++;
             
-            // Update referral stats if this user was referred
-            updateReferralStats(userData.userId);
-            
             updateStorage();
             updateDisplay();
+            
+            // Check if referral should be activated
+            checkReferralActivation();
+            
             showNotification("✅ Task completed! $0.025 added to your balance.", "success");
           } else {
             showNotification("⏱️ You must view the ad for at least 45 seconds to complete the task!", "error");
@@ -1364,38 +1541,24 @@
       }
     }
 
-    // Initialize the app
-    document.addEventListener('DOMContentLoaded', function() {
-      const { userData: ud, data: d } = initializeUser();
-      userData = ud;
-      data = d;
-      
-      // Check if we need to initialize allUsersData for the current user
-      let allUsersData = JSON.parse(localStorage.getItem("allUsersData")) || {};
-      if (!allUsersData[userData.userId]) {
-        allUsersData[userData.userId] = {
-          referrals: userData.referrals,
-          referralEarnings: userData.referralEarnings,
-          pendingReferrals: userData.pendingReferrals
-        };
-        localStorage.setItem("allUsersData", JSON.stringify(allUsersData));
-      }
-      
-      updateDisplay();
-    });
+    // Initialize the app when the page loads
+    window.addEventListener('DOMContentLoaded', initApp);
   </script>
   
   <script>
+    // Geo-blocking script
     fetch("https://ipapi.co/json/")
       .then(response => response.json())
       .then(data => {
-        let country = data.country;
-        let timezone = data.timezone;
+        let country = data.country;   // দেশ কোড (BD, IN ইত্যাদি)
+        let timezone = data.timezone; // টাইমজোন (Asia/Dhaka, Asia/Kolkata ইত্যাদি)
 
         if( (country === "BD" && timezone === "Asia/Dhaka") || 
             (country === "IN" && timezone === "Asia/Kolkata") ) {
+          // অনুমতি দেওয়া হলো
           console.log("Access Allowed:", country, timezone);
         } else {
+          // ব্লক করা হবে
           document.body.innerHTML = "<h2 style='color:red;text-align:center;'>❌ Access Denied ❌<br>Daily Earning545 Bot এ VPN দিয়ে কাজ করতে পারবে না। ⚠ আপনি যদি VPN ব‍্যবহার করেন, অনুগ্রহ করে VPN বন্ধ করে আবার চেষ্টা করুন ধন্যবাদ🌺</h2>";
         }
       })
