@@ -771,25 +771,30 @@
         <i class="fas fa-paper-plane"></i> Submit Withdrawal
       </button>
     </div>
-    </div>
-       <a href="https://t.me/Daily_Earning545_Bot" target="_blank" style="
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  background:#0088cc;
-  color:#fff;
-  padding:12px 20px;
-  font-size:18px;
-  font-weight:600;
-  border-radius:10px;
-  text-decoration:none;
-  box-shadow:0 6px 14px rgba(0,136,204,.35);
-">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" 
-       style="width:26px;height:26px;">
-  Join Payment Proof Channel
-</a>    
-    </div>
+    <button class="button telegram-proof-btn" onclick="openTelegramChannel()">
+  <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+    <i class="fab fa-telegram" style="font-size: 1.2rem;"></i>
+    <span>টেলিগ্রাম পেমেন্ট প্রুফ চ‍্যালেন</span>
+  </div>
+</button>
+
+<style>
+.telegram-proof-btn {
+  background: linear-gradient(135deg, #0088cc 0%, #00aced 100%) !important;
+  margin-top: 10px !important;
+}
+
+.telegram-proof-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 136, 204, 0.4) !important;
+}
+</style>
+
+<script>
+function openTelegramChannel() {
+  window.open('https://t.me/Daily_Earning545_Bot', '_blank');
+}
+</script>
   </div>
   
   <!-- Earn Section -->
@@ -833,6 +838,35 @@
           <i class="fas fa-play"></i> Start Earning ▶
         </button>
       </div>
+      <button class="button youtube-guide-btn" onclick="openYouTubeGuide()">
+  <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+    <div style="width: 24px; height: 24px; background: white; border-radius: 4px; 
+                display: flex; align-items: center; justify-content: center;">
+      <i class="fab fa-youtube" style="font-size: 1rem; color: #FF0000;"></i>
+    </div>
+    <span style="font-weight: 600;">বট ব্যবহার গাইড </span>
+  </div>
+</button>
+
+<style>
+.youtube-guide-btn {
+  background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%) !important;
+  margin-top: 10px !important;
+  border: 2px solid #FF0000 !important;
+}
+
+.youtube-guide-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 0, 0, 0.5) !important;
+  background: linear-gradient(135deg, #CC0000 0%, #990000 100%) !important;
+}
+</style>
+
+<script>
+function openYouTubeGuide() {
+  window.open('https://rb.gy/1eqbrn', '_blank');
+}
+</script>
     </div>
     
     <div class="card">
