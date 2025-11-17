@@ -558,62 +558,6 @@
       border-left: 4px solid var(--warning);
     }
     
-    /* Admin Panel */
-    #admin-panel {
-      display: none;
-      padding: 20px;
-    }
-    
-    .admin-card {
-      background: white;
-      border-radius: 20px;
-      padding: 25px;
-      box-shadow: var(--shadow);
-      margin-bottom: 20px;
-    }
-    
-    .admin-section-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 15px;
-      color: var(--primary);
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
-    
-    .admin-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    
-    .admin-table th, .admin-table td {
-      padding: 12px 15px;
-      text-align: left;
-      border-bottom: 1px solid #eee;
-    }
-    
-    .admin-table th {
-      background-color: #f8fafc;
-      font-weight: 600;
-      color: var(--dark);
-    }
-    
-    .admin-table tr:hover {
-      background-color: #f8fafc;
-    }
-    
-    .admin-action-btn {
-      padding: 6px 12px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.85rem;
-    }
-    
     /* Responsive */
     @media (min-width: 768px) {
       .cards-container {
@@ -963,55 +907,6 @@
     </div>
   </div>
   
-  <!-- Admin Panel -->
-  <div id="admin-panel">
-    <div class="admin-card">
-      <div class="admin-section-title">
-        <i class="fas fa-cog"></i>
-        <h3>Admin Panel</h3>
-      </div>
-      
-      <div class="admin-info-item">
-        <div class="info-title">Total Users</div>
-        <div class="info-data" id="total-users">0</div>
-      </div>
-      
-      <div class="admin-info-item">
-        <div class="info-title">Total Withdrawals</div>
-        <div class="info-data" id="total-withdrawals">0</div>
-      </div>
-      
-      <div class="admin-info-item">
-        <div class="info-title">Pending Withdrawals</div>
-        <div class="info-data" id="pending-withdrawals">0</div>
-      </div>
-    </div>
-    
-    <div class="admin-card">
-      <div class="admin-section-title">
-        <i class="fas fa-money-bill-wave"></i>
-        <h3>Withdrawal Requests</h3>
-      </div>
-      
-      <table class="admin-table" id="withdrawal-table">
-        <thead>
-          <tr>
-            <th>User ID</th>
-            <th>Username</th>
-            <th>Amount</th>
-            <th>Method</th>
-            <th>Address</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="withdrawal-requests">
-          <!-- Withdrawal requests will be populated here -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-  
   <div class="nav">
     <div class="nav-item active" id="nav-home" onclick="show('home')">
       <div class="nav-icon">
@@ -1037,83 +932,187 @@
       </div>
       <div class="nav-label">Profile</div>
     </div>
-    <div class="nav-item" id="nav-admin" onclick="show('admin')" style="display:none;">
-      <div class="nav-icon">
-        <i class="fas fa-cog"></i>
-      </div>
-      <div class="nav-label">Admin</div>
-    </div>
   </div>
   
   <script>
-    // Telegram Bot API Configuration
-    const BOT_TOKEN = "7886120175:AAEq3IrdoIEVQ-rPV0o0HeByBpbzeL2buGE";
-    const ADMIN_USER_IDS = "7578470500"; // Add admin user IDs here
+    // Telegram Bot API configuration
+    const BOT_TOKEN = "7811173242:AAGeYgntYuB906-hMhovnk5PE_pxHbtgFhs";
+    const BOT_API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
     
-    // Generate persistent user ID and username
-    let userId = localStorage.getItem("userId");
-    let username = localStorage.getItem("username");
-    let telegramUser = null;
+    // Global variables
+    let userId, username, telegramId, referrerId;
+    let userData, data;
     
-    // If not stored, generate new values
-    if (!userId) {
-      // Check if we're in Telegram environment
-      if (window.Telegram && window.Telegram.WebApp) {
-        telegramUser = window.Telegram.WebApp.initDataUnsafe.user;
-        if (telegramUser && telegramUser.id) {
-          userId = telegramUser.id;
-          if (telegramUser.username) {
-            username = telegramUser.username;
-          } else if (telegramUser.first_name) {
-            username = telegramUser.first_name;
-            if (telegramUser.last_name) username += " " + telegramUser.last_name;
+    // Check for referral parameter in URL
+    function getUrlParameter(name) {
+      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+      const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+      const results = regex.exec(location.search);
+      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+    
+    // Check if we're in Telegram WebApp
+    const isTelegramWebApp = window.Telegram && window.Telegram.WebApp;
+    
+    // Initialize user data
+    function initializeUser() {
+      // Check for referral parameter
+      const refParam = getUrlParameter('ref');
+      if (refParam) {
+        referrerId = refParam;
+        localStorage.setItem("referrerId", referrerId);
+      } else {
+        referrerId = localStorage.getItem("referrerId");
+      }
+      
+      // Get stored values or generate new ones
+      userId = localStorage.getItem("userId");
+      username = localStorage.getItem("username");
+      telegramId = localStorage.getItem("telegramId");
+      
+      // If not stored, generate new values
+      if (!userId) {
+        if (isTelegramWebApp) {
+          const user = window.Telegram.WebApp.initDataUnsafe.user;
+          if (user) {
+            telegramId = user.id;
+            userId = "tg_" + user.id;
+            
+            if (user.username) {
+              username = user.username;
+            } else if (user.first_name) {
+              username = user.first_name;
+              if (user.last_name) username += " " + user.last_name;
+            } else {
+              username = "User" + user.id;
+            }
           } else {
+            // Fallback if user data not available
+            userId = "user_" + Math.floor(Math.random() * 1000000);
             username = "User" + userId;
           }
         } else {
-          userId = Math.floor(Math.random() * 1000000);
+          // Not in Telegram environment
+          userId = "user_" + Math.floor(Math.random() * 1000000);
           username = "User" + userId;
         }
-      } else {
-        userId = Math.floor(Math.random() * 1000000);
-        username = "User" + userId;
+        
+        localStorage.setItem("userId", userId);
+        localStorage.setItem("username", username);
+        if (telegramId) localStorage.setItem("telegramId", telegramId);
+        
+        // If this is a new user with a referrer, process referral
+        if (referrerId) {
+          processReferral(referrerId, userId);
+        }
       }
-      localStorage.setItem("userId", userId);
-      localStorage.setItem("username", username);
+      
+      const today = new Date().toLocaleDateString();
+      
+      // Load or initialize user data
+      userData = JSON.parse(localStorage.getItem("MTEarningData")) || {
+        userId, 
+        username, 
+        telegramId,
+        referrals: 0,
+        referralEarnings: 0,
+        pendingReferrals: 0,
+        lifetimeEarning: 0,
+        withdrew: 0,
+        totalTasks: 0,
+        joinDate: new Date().toLocaleDateString()
+      };
+      
+      // Update with current values
+      userData.userId = userId;
+      userData.username = username;
+      if (telegramId) userData.telegramId = telegramId;
+      
+      // Initialize daily data
+      data = JSON.parse(localStorage.getItem("dailyEarningData")) || {
+        date: today, completed: 0, remaining: 100, todaysEarning: 0
+      };
+      
+      if (data.date !== today) {
+        data = { date: today, completed: 0, remaining: 100, todaysEarning: 0 };
+      }
+      
+      localStorage.setItem("MTEarningData", JSON.stringify(userData));
+      localStorage.setItem("dailyEarningData", JSON.stringify(data));
+      
+      return { userData, data };
     }
     
-    // Check if user is admin
-    const isAdmin = ADMIN_USER_IDS.includes(parseInt(userId));
-    if (isAdmin) {
-      document.getElementById("nav-admin").style.display = "block";
+    // Process referral when a new user signs up
+    function processReferral(referrerId, newUserId) {
+      try {
+        // Get referrer's data
+        let allUsersData = JSON.parse(localStorage.getItem("allUsersData")) || {};
+        
+        if (allUsersData[referrerId]) {
+          // Update referrer's data
+          allUsersData[referrerId].pendingReferrals = (allUsersData[referrerId].pendingReferrals || 0) + 1;
+          
+          // Store updated data
+          localStorage.setItem("allUsersData", JSON.stringify(allUsersData));
+          
+          // Update current user's data to show they were referred
+          let userData = JSON.parse(localStorage.getItem("MTEarningData")) || {};
+          userData.referredBy = referrerId;
+          localStorage.setItem("MTEarningData", JSON.stringify(userData));
+          
+          console.log("Referral processed:", referrerId, "referred", newUserId);
+        } else {
+          // Initialize referrer data if not exists
+          allUsersData[referrerId] = {
+            referrals: 0,
+            referralEarnings: 0,
+            pendingReferrals: 1
+          };
+          localStorage.setItem("allUsersData", JSON.stringify(allUsersData));
+          
+          // Update current user's data to show they were referred
+          let userData = JSON.parse(localStorage.getItem("MTEarningData")) || {};
+          userData.referredBy = referrerId;
+          localStorage.setItem("MTEarningData", JSON.stringify(userData));
+        }
+      } catch (error) {
+        console.error("Error processing referral:", error);
+      }
     }
     
-    const today = new Date().toLocaleDateString();
-
-    // Initialize user data
-    let userData = JSON.parse(localStorage.getItem("MTEarningData")) || {
-      userId, 
-      username, 
-      referrals: 0,
-      referralEarnings: 0,
-      pendingReferrals: 0,
-      lifetimeEarning: 0,
-      withdrew: 0,
-      totalTasks: 0,
-      joinDate: new Date().toLocaleDateString()
-    };
-
-    let data = JSON.parse(localStorage.getItem("dailyEarningData")) || {
-      date: today, completed: 0, remaining: 100, todaysEarning: 0
-    };
-
-    if (data.date !== today) {
-      data = { date: today, completed: 0, remaining: 100, todaysEarning: 0 };
+    // Update referral counts when a referred user completes tasks
+    function updateReferralStats(referredUserId) {
+      try {
+        let allUsersData = JSON.parse(localStorage.getItem("allUsersData")) || {};
+        let referredUserData = JSON.parse(localStorage.getItem("MTEarningData")) || {};
+        
+        if (referredUserData.referredBy && allUsersData[referredUserData.referredBy]) {
+          const referrerId = referredUserData.referredBy;
+          
+          // Move from pending to confirmed referrals after some tasks
+          if (referredUserData.totalTasks >= 5) { // After 5 tasks
+            allUsersData[referrerId].pendingReferrals = Math.max(0, (allUsersData[referrerId].pendingReferrals || 0) - 1);
+            allUsersData[referrerId].referrals = (allUsersData[referrerId].referrals || 0) + 1;
+            allUsersData[referrerId].referralEarnings = (allUsersData[referrerId].referralEarnings || 0) + 0.50;
+            
+            // Update current user's data if they are the referrer
+            let currentUserData = JSON.parse(localStorage.getItem("MTEarningData")) || {};
+            if (currentUserData.userId === referrerId) {
+              currentUserData.pendingReferrals = allUsersData[referrerId].pendingReferrals;
+              currentUserData.referrals = allUsersData[referrerId].referrals;
+              currentUserData.referralEarnings = allUsersData[referrerId].referralEarnings;
+              localStorage.setItem("MTEarningData", JSON.stringify(currentUserData));
+            }
+            
+            localStorage.setItem("allUsersData", JSON.stringify(allUsersData));
+          }
+        }
+      } catch (error) {
+        console.error("Error updating referral stats:", error);
+      }
     }
-
-    // Initialize display
-    updateDisplay();
-
+    
     function updateStorage() {
       localStorage.setItem("MTEarningData", JSON.stringify(userData));
       localStorage.setItem("dailyEarningData", JSON.stringify(data));
@@ -1165,11 +1164,6 @@
       
       // Update task visualization
       updateTaskVisualization();
-      
-      // Update admin panel if user is admin
-      if (isAdmin) {
-        updateAdminPanel();
-      }
     }
 
     function updateTaskVisualization() {
@@ -1203,7 +1197,7 @@
       }
     }
 
-    // FIXED taskLinks array with commas
+    // Task links array
     const taskLinks = [
       "https://premium-sm-offer.vercel.app",
       "https://tomake-chai-vlona.vercel.app",
@@ -1214,98 +1208,7 @@
       "https://premium-sm-offer.vercel.app",
       "https://tomake-chai-vlona.vercel.app",
       "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      "https://premium-sm-offer.vercel.app",
-      "https://tomake-chai-vlona.vercel.app",
-      
+      "https://tomake-chai-vlona.vercel.app"
     ];
 
     function showNotification(message, type) {
@@ -1346,12 +1249,13 @@
             data.todaysEarning += 0.025;
             userData.lifetimeEarning += 0.025;
             userData.totalTasks++;
+            
+            // Update referral stats if this user was referred
+            updateReferralStats(userData.userId);
+            
             updateStorage();
             updateDisplay();
             showNotification("✅ Task completed! $0.025 added to your balance.", "success");
-            
-            // Send notification to Telegram bot
-            sendTelegramNotification(`User ${username} (ID: ${userId}) completed a task. Total earnings: $${userData.lifetimeEarning.toFixed(3)}`);
           } else {
             showNotification("⏱️ You must view the ad for at least 45 seconds to complete the task!", "error");
           }
@@ -1368,7 +1272,7 @@
         showNotification("Please enter a valid amount", "error");
         return;
       }
-      if (amount < 0.001) {
+      if (amount < 30) {
         showNotification("Minimum withdrawal amount is $30", "error");
         return;
       }
@@ -1376,7 +1280,7 @@
         showNotification("Insufficient balance", "error");
         return;
       }
-      if (userData.referrals < 0) {
+      if (userData.referrals < 10) {
         showNotification("You need at least 10 referrals to withdraw", "error");
         return;
       }
@@ -1395,22 +1299,6 @@
       updateStorage();
       updateDisplay();
       showNotification("Withdrawal request submitted successfully! It will be processed within 24-48 hours.", "success");
-      
-      // Save withdrawal request
-      const withdrawalRequests = JSON.parse(localStorage.getItem("withdrawalRequests")) || [];
-      withdrawalRequests.push({
-        userId,
-        username,
-        amount,
-        method,
-        address,
-        status: "pending",
-        date: new Date().toLocaleString()
-      });
-      localStorage.setItem("withdrawalRequests", JSON.stringify(withdrawalRequests));
-      
-      // Send notification to Telegram bot
-      sendTelegramNotification(`New withdrawal request from ${username} (ID: ${userId}): $${amount} via ${method} to ${address}`);
     }
 
     function show(section) {
@@ -1420,7 +1308,6 @@
       document.getElementById("withdraw").style.display = "none";
       document.getElementById("earn").style.display = "none";
       document.getElementById("profile-page").style.display = "none";
-      document.getElementById("admin-panel").style.display = "none";
       
       // Show appropriate section
       if (section === 'home') {
@@ -1432,9 +1319,6 @@
         document.getElementById("earn").style.display = "block";
       } else if (section === 'profile') {
         document.getElementById("profile-page").style.display = "block";
-      } else if (section === 'admin') {
-        document.getElementById("admin-panel").style.display = "block";
-        updateAdminPanel();
       }
       
       // Update navigation
@@ -1480,102 +1364,44 @@
       }
     }
 
-    // Telegram Bot Integration
-    function sendTelegramNotification(message) {
-      // This would typically send a message to the Telegram bot
-      // For security reasons, this would be handled by a backend server
-      console.log("Telegram notification:", message);
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', function() {
+      const { userData: ud, data: d } = initializeUser();
+      userData = ud;
+      data = d;
       
-      // In a real implementation, you would make an API call to your backend
-      // which would then send the message via the Telegram Bot API
-      /*
-      fetch('/api/send-telegram-notification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: message,
-          botToken: BOT_TOKEN
-        })
-      });
-      */
-    }
-
-    // Admin Panel Functions
-    function updateAdminPanel() {
-      if (!isAdmin) return;
+      // Check if we need to initialize allUsersData for the current user
+      let allUsersData = JSON.parse(localStorage.getItem("allUsersData")) || {};
+      if (!allUsersData[userData.userId]) {
+        allUsersData[userData.userId] = {
+          referrals: userData.referrals,
+          referralEarnings: userData.referralEarnings,
+          pendingReferrals: userData.pendingReferrals
+        };
+        localStorage.setItem("allUsersData", JSON.stringify(allUsersData));
+      }
       
-      const withdrawalRequests = JSON.parse(localStorage.getItem("withdrawalRequests")) || [];
-      const users = JSON.parse(localStorage.getItem("users")) || [];
-      
-      document.getElementById("total-users").textContent = users.length;
-      document.getElementById("total-withdrawals").textContent = withdrawalRequests.length;
-      document.getElementById("pending-withdrawals").textContent = withdrawalRequests.filter(req => req.status === "pending").length;
-      
-      // Populate withdrawal requests table
-      const tableBody = document.getElementById("withdrawal-requests");
-      tableBody.innerHTML = "";
-      
-      withdrawalRequests.forEach((request, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${request.userId}</td>
-          <td>${request.username}</td>
-          <td>$${request.amount}</td>
-          <td>${request.method}</td>
-          <td>${request.address}</td>
-          <td>${request.status}</td>
-          <td>
-            ${request.status === "pending" ? 
-              `<button class="admin-action-btn" onclick="approveWithdrawal(${index})">Approve</button>
-               <button class="admin-action-btn" onclick="rejectWithdrawal(${index})" style="background: var(--danger); margin-left: 5px;">Reject</button>` : 
-              ""}
-          </td>
-        `;
-        tableBody.appendChild(row);
-      });
-    }
-
-    function approveWithdrawal(index) {
-      const withdrawalRequests = JSON.parse(localStorage.getItem("withdrawalRequests")) || [];
-      withdrawalRequests[index].status = "approved";
-      localStorage.setItem("withdrawalRequests", JSON.stringify(withdrawalRequests));
-      updateAdminPanel();
-      showNotification("Withdrawal approved successfully!", "success");
-    }
-
-    function rejectWithdrawal(index) {
-      const withdrawalRequests = JSON.parse(localStorage.getItem("withdrawalRequests")) || [];
-      withdrawalRequests[index].status = "rejected";
-      localStorage.setItem("withdrawalRequests", JSON.stringify(withdrawalRequests));
-      updateAdminPanel();
-      showNotification("Withdrawal rejected!", "success");
-    }
-
-    // Initialize task visualization
-    updateTaskVisualization();
+      updateDisplay();
+    });
   </script>
   
-   <script>
-  fetch("https://ipapi.co/json/")
-    .then(response => response.json())
-    .then(data => {
-      let country = data.country;   // দেশ কোড (BD, IN ইত্যাদি)
-      let timezone = data.timezone; // টাইমজোন (Asia/Dhaka, Asia/Kolkata ইত্যাদি)
+  <script>
+    fetch("https://ipapi.co/json/")
+      .then(response => response.json())
+      .then(data => {
+        let country = data.country;
+        let timezone = data.timezone;
 
-      if( (country === "BD" && timezone === "Asia/Dhaka") || 
-          (country === "IN" && timezone === "Asia/Kolkata") ) {
-        // অনুমতি দেওয়া হলো
-        console.log("Access Allowed:", country, timezone);
-      } else {
-        // ব্লক করা হবে
-        document.body.innerHTML = "<h2 style='color:red;text-align:center;'>❌ Access Denied ❌<br>Daily Earning545 Bot এ VPN দিয়ে কাজ করতে পারবে না। ⚠ আপনি যদি VPN ব‍্যবহার করেন, অনুগ্রহ করে VPN বন্ধ করে আবার চেষ্টা করুন ধন্যবাদ🌺</h2>";
-      }
-    })
-    .catch(error => {
-      console.error("Geo API Error:", error);
-    });
+        if( (country === "BD" && timezone === "Asia/Dhaka") || 
+            (country === "IN" && timezone === "Asia/Kolkata") ) {
+          console.log("Access Allowed:", country, timezone);
+        } else {
+          document.body.innerHTML = "<h2 style='color:red;text-align:center;'>❌ Access Denied ❌<br>Daily Earning545 Bot এ VPN দিয়ে কাজ করতে পারবে না। ⚠ আপনি যদি VPN ব‍্যবহার করেন, অনুগ্রহ করে VPN বন্ধ করে আবার চেষ্টা করুন ধন্যবাদ🌺</h2>";
+        }
+      })
+      .catch(error => {
+        console.error("Geo API Error:", error);
+      });
   </script>
 </body>
 </html>
