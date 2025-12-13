@@ -651,7 +651,7 @@
       <div class="card-content">
         <div class="info-row">
           <span class="info-label">Total Tasks</span>
-          <span class="info-value" id="total">100</span>
+          <span class="info-value" id="total">150</span>
         </div>
         <div class="info-row">
           <span class="info-label">Completed</span>
@@ -659,7 +659,7 @@
         </div>
         <div class="info-row">
           <span class="info-label">Remaining</span>
-          <span class="info-value" id="remaining-card">100</span>
+          <span class="info-value" id="remaining-card">150</span>
         </div>
         
         <div class="progress-container">
@@ -694,7 +694,7 @@
         </div>
         <div class="info-row">
           <span class="info-label">Avg. per Task</span>
-          <span class="info-value">$0.025</span>
+          <span class="info-value">$0.021</span>
         </div>
       </div>
     </div>
@@ -806,12 +806,12 @@ function openTelegramChannel() {
       </div>
       <div class="card-content">
         <p class="info-label" style="margin-bottom: 20px; text-align: center;">
-          <i class="fas fa-info-circle"></i> Earn money by viewing ads. Stay on the ad page for 45 seconds to complete a task and earn $0.025 per task!
+          <i class="fas fa-info-circle"></i> Earn money by viewing ads. Stay on the ad page for 30 seconds to complete a task and earn $0.021 per task!
         </p>
         
         <div class="task-counter">
           <div class="counter-item">
-            <div class="counter-value" id="etotal">100</div>
+            <div class="counter-value" id="etotal">150</div>
             <div class="counter-label">Total Tasks</div>
           </div>
           <div class="counter-item">
@@ -819,7 +819,7 @@ function openTelegramChannel() {
             <div class="counter-label">Completed</div>
           </div>
           <div class="counter-item">
-            <div class="counter-value" id="eremaining">100</div>
+            <div class="counter-value" id="eremaining">150</div>
             <div class="counter-label">Remaining</div>
           </div>
         </div>
@@ -1136,11 +1136,11 @@ function openYouTubeGuide() {
       };
 
       data = JSON.parse(localStorage.getItem("dailyEarningData")) || {
-        date: today, completed: 0, remaining: 100, todaysEarning: 0
+        date: today, completed: 0, remaining: 150, todaysEarning: 0
       };
 
       if (data.date !== today) {
-        data = { date: today, completed: 0, remaining: 100, todaysEarning: 0 };
+        data = { date: today, completed: 0, remaining: 150, todaysEarning: 0 };
       }
     }
     
@@ -1163,7 +1163,7 @@ function openYouTubeGuide() {
       localStorage.setItem("MTEarningData", JSON.stringify(userData));
       
       const today = new Date().toLocaleDateString();
-      data = { date: today, completed: 0, remaining: 100, todaysEarning: 0 };
+      data = { date: today, completed: 0, remaining: 150, todaysEarning: 0 };
       localStorage.setItem("dailyEarningData", JSON.stringify(data));
     }
     
@@ -1214,7 +1214,7 @@ function openYouTubeGuide() {
           // Add to referrer's pending referrals
           // In a real implementation, you would update this on the server
           // For now, we'll just show a notification
-          showNotification("You've been referred by a friend! Complete 100 tasks to activate the referral.", "success");
+          showNotification("You've been referred by a friend! Complete 1000 tasks to activate the referral.", "success");
           
           // Here you would update the referrer's data on the server
           // await fetch(`${API_BASE_URL}/addPendingReferral`, {
@@ -1232,7 +1232,7 @@ function openYouTubeGuide() {
     async function checkReferralActivation() {
       const referredBy = localStorage.getItem("referredBy");
       
-      if (referredBy && userData.totalTasks >= 100) {
+      if (referredBy && userData.totalTasks >= 1000) {
         try {
           // Activate the referral
           // In a real implementation, you would update this on the server
@@ -1269,7 +1269,7 @@ function openYouTubeGuide() {
       document.getElementById("header-balance").innerText = "$" + userData.lifetimeEarning.toFixed(3);
       
       // Update progress bar
-      const progressPercent = (data.completed / 100 * 100);
+      const progressPercent = (data.completed / 150 * 150);
       document.getElementById("progress-bar").style.width = progressPercent + "%";
       document.getElementById("progress-percent").innerText = progressPercent.toFixed(0) + "%";
       
@@ -1311,7 +1311,7 @@ function openYouTubeGuide() {
       homeVisual.innerHTML = "";
       earnVisual.innerHTML = "";
       
-      // Create 100 dots (10 rows of 10)
+      // Create 100 dots (10 rows of 15)
       for (let i = 0; i < 10; i++) {
         const row = document.createElement("div");
         row.style.display = "flex";
@@ -1319,10 +1319,10 @@ function openYouTubeGuide() {
         row.style.gap = "5px";
         row.style.marginBottom = "5px";
         
-        for (let j = 0; j < 10; j++) {
+        for (let j = 0; j < 15; j++) {
           const dot = document.createElement("div");
           dot.className = "task-dot";
-          const index = i * 10 + j;
+          const index = i * 15 + j;
           
           if (index < data.completed) {
             dot.classList.add("completed");
@@ -1338,7 +1338,7 @@ function openYouTubeGuide() {
 
     // Task links array
     const taskLinks = [
-      "https://www.effectivegatecpm.com/ssqv9iem?key=05b99b8807c55b5d695f4d07c9d035a6",
+      "https://premium-sm-offer.vercel.app",
     ];
 
     function showNotification(message, type) {
@@ -1355,7 +1355,7 @@ function openYouTubeGuide() {
     }
 
     function startTask() {
-      if (data.completed >= 100) {
+      if (data.completed >= 150) {
         showNotification("You have completed all tasks for today!", "warning");
         return;
       }
@@ -1375,9 +1375,9 @@ function openYouTubeGuide() {
           
           if (duration >= 1) {
             data.completed++;
-            data.remaining = 100 - data.completed;
-            data.todaysEarning += 0.025;
-            userData.lifetimeEarning += 0.025;
+            data.remaining = 150 - data.completed;
+            data.todaysEarning += 0.021;
+            userData.lifetimeEarning += 0.021;
             userData.totalTasks++;
             
             updateStorage();
@@ -1386,9 +1386,9 @@ function openYouTubeGuide() {
             // Check if referral should be activated
             checkReferralActivation();
             
-            showNotification("✅ Task completed! $0.025 added to your balance.", "success");
+            showNotification("✅ Task completed! $0.021 added to your balance.", "success");
           } else {
-            showNotification("⏱️ You must view the ad for at least 45 seconds to complete the task!", "error");
+            showNotification("⏱️ You must view the ad for at least 30 seconds to complete the task!", "error");
           }
         }
       }, 500);
