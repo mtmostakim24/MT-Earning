@@ -690,7 +690,7 @@
         </div>
         <div class="info-row">
           <span class="info-label">Lifetime Earnings</span>
-          <span class="info-value">USD $<span id="lifetime-earning">27.206</span></span>
+          <span class="info-value">USD $<span id="lifetime-earning">27.260</span></span>
         </div>
         <div class="info-row">
           <span class="info-label">Avg. per Task</span>
@@ -710,11 +710,11 @@
         
         <div class="referral-stats">
           <div class="referral-stat">
-            <div class="referral-stat-value" id="ref-earned">$0</div>
+            <div class="referral-stat-value" id="ref-earned">$6.50</div>
             <div class="referral-stat-label">Referral Earnings</div>
           </div>
           <div class="referral-stat">
-            <div class="referral-stat-value" id="referral-count">0</div>
+            <div class="referral-stat-value" id="referral-count">13</div>
             <div class="referral-stat-label">Referrals</div>
           </div>
         </div>
@@ -903,7 +903,7 @@ function openYouTubeGuide() {
         
         <div class="profile-info-item">
           <div class="info-title">Join Date</div>
-          <div class="info-data" id="join-date">Loading...</div>
+          <div class="info-data" id="join-date">2/13/2026</div>
         </div>
       </div>
     </div>
@@ -922,7 +922,7 @@ function openYouTubeGuide() {
         
         <div class="profile-info-item">
           <div class="info-title">Total Withdrew</div>
-          <div class="info-data" id="profile-withdrew">$0.000</div>
+          <div class="info-data" id="profile-withdrew">$0.054</div>
         </div>
         
         <div class="profile-info-item">
@@ -932,7 +932,7 @@ function openYouTubeGuide() {
         
         <div class="profile-info-item">
           <div class="info-title">Lifetime Earnings</div>
-          <div class="info-data" id="profile-lifetime-earning">$27.206</div>
+          <div class="info-data" id="profile-lifetime-earning">$27.260</div>
         </div>
       </div>
     </div>
@@ -1123,16 +1123,18 @@ function openYouTubeGuide() {
     
     // Load user data from localStorage (fallback)
     async function loadUserDataFromLocalStorage(today) {
+      // Updated values as requested
       userData = JSON.parse(localStorage.getItem("MTEarningData")) || {
         userId, 
         username, 
         referrals: 13,
         referralEarnings: 6.50,
         pendingReferrals: 0,
-        lifetimeEarning: 27.206,
-        withdrew: 0,
+        lifetimeEarning: 27.260,       // total lifetime earnings (tasks + referrals)
+        withdrew: 0.054,                // amount withdrawn to make current balance 27.206
         totalTasks: 986,
-        joinDate: new Date().toLocaleDateString()
+        totalEarnedTasks: 20.706,       // earned from tasks only (for stats card)
+        joinDate: "2/13/2026"
       };
 
       data = JSON.parse(localStorage.getItem("dailyEarningData")) || {
@@ -1152,10 +1154,11 @@ function openYouTubeGuide() {
         referrals: 13,
         referralEarnings: 6.50,
         pendingReferrals: 0,
-        lifetimeEarning: 27.206,
-        withdrew: 0,
+        lifetimeEarning: 27.260,
+        withdrew: 0.054,
         totalTasks: 986,
-        joinDate: new Date().toLocaleDateString()
+        totalEarnedTasks: 20.706,
+        joinDate: "2/13/2026"
       };
       
       // In a real implementation, you would send this to your server
@@ -1258,6 +1261,9 @@ function openYouTubeGuide() {
     }
 
     function updateDisplay() {
+      // Calculate available balance
+      const availableBalance = userData.lifetimeEarning - userData.withdrew;
+      
       // Update home screen
       document.getElementById("username").innerText = username;
       document.getElementById("user-id").innerText = userId;
@@ -1265,16 +1271,16 @@ function openYouTubeGuide() {
       document.getElementById("remaining-card").innerText = data.remaining;
       document.getElementById("todays-earning").innerText = data.todaysEarning.toFixed(3);
       document.getElementById("lifetime-earning").innerText = userData.lifetimeEarning.toFixed(3);
-      document.getElementById("available").innerText = userData.lifetimeEarning.toFixed(3);
-      document.getElementById("header-balance").innerText = "$" + userData.lifetimeEarning.toFixed(3);
+      document.getElementById("available").innerText = availableBalance.toFixed(3);
+      document.getElementById("header-balance").innerText = "$" + availableBalance.toFixed(3);
       
       // Update progress bar
-      const progressPercent = (data.completed / 150 * 150);
+      const progressPercent = (data.completed / 150 * 100);
       document.getElementById("progress-bar").style.width = progressPercent + "%";
       document.getElementById("progress-percent").innerText = progressPercent.toFixed(0) + "%";
       
       // Update profile stats
-      document.getElementById("total-earned").innerText = "$" + userData.lifetimeEarning.toFixed(3);
+      document.getElementById("total-earned").innerText = "$" + userData.totalEarnedTasks.toFixed(3);
       document.getElementById("tasks-completed").innerText = userData.totalTasks;
       
       // Update referral section
@@ -1285,7 +1291,7 @@ function openYouTubeGuide() {
       // Update profile page
       document.getElementById("profile-username").innerText = username;
       document.getElementById("profile-user-id").innerText = userId;
-      document.getElementById("profile-balance").innerText = "$" + userData.lifetimeEarning.toFixed(3);
+      document.getElementById("profile-balance").innerText = "$" + availableBalance.toFixed(3);
       document.getElementById("profile-withdrew").innerText = "$" + userData.withdrew.toFixed(3);
       document.getElementById("profile-refer-count").innerText = userData.referrals;
       document.getElementById("profile-refer-earnings").innerText = "$" + userData.referralEarnings.toFixed(3);
@@ -1379,6 +1385,7 @@ function openYouTubeGuide() {
             data.todaysEarning += 0.021;
             userData.lifetimeEarning += 0.021;
             userData.totalTasks++;
+            userData.totalEarnedTasks += 0.021;
             
             updateStorage();
             updateDisplay();
@@ -1398,6 +1405,7 @@ function openYouTubeGuide() {
       const amount = parseFloat(document.getElementById("withdraw-amount").value);
       const method = document.getElementById("withdraw-method").value;
       const address = document.getElementById("withdraw-address").value;
+      const availableBalance = userData.lifetimeEarning - userData.withdrew;
       
       if (isNaN(amount)) {
         showNotification("Please enter a valid amount", "error");
@@ -1407,7 +1415,7 @@ function openYouTubeGuide() {
         showNotification("Minimum withdrawal amount is $30", "error");
         return;
       }
-      if (amount > userData.lifetimeEarning) {
+      if (amount > availableBalance) {
         showNotification("Insufficient balance", "error");
         return;
       }
@@ -1425,8 +1433,8 @@ function openYouTubeGuide() {
       }
       
       // Update balance
-      userData.lifetimeEarning -= amount;
       userData.withdrew += amount;
+      // lifetimeEarning stays same, withdrew increases, available decreases
       updateStorage();
       updateDisplay();
       showNotification("Withdrawal request submitted successfully! It will be processed within 24-48 hours.", "success");
